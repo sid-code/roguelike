@@ -8,10 +8,7 @@ define(["./game", "./actor"], function(Game, Actor) {
   var game = new Game(canvas, {
     player: player,
     seed: seed,
-    viewport: {
-      width: 64,
-      height: 32
-    },
+
     homeLevel: {
       width: 63,
       height: 31,

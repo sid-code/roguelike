@@ -16,11 +16,6 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
         height: (options.homeLevel || {}).height || 33,
       },
       tileSize: options.tileSize || 15,
-
-      viewPort: {
-        width: options.viewport.width,
-        height: options.viewport.height,
-      },
     };
 
     this.ticks = 0;
