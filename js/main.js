@@ -7,15 +7,22 @@ define(["./game", "./actor"], function(Game, Actor) {
 
   var game = new Game(canvas, {
     player: player,
+
+    // The RNG's seed (needs to be a float x, 1 < x < 2)
     seed: seed,
 
+    // How big should the home level be?
     homeLevel: {
       width: 63,
       height: 31,
     },
+
+    // Dungeon configuration
     dungeon: {
       width: 255,
       height: 127,
+
+      // Room size control
       minRoomSize: 5,
       maxRoomSize: 11,
       
