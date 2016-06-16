@@ -230,7 +230,6 @@ define(["./rng"], function(rng) {
       var pos = firstBlank;
       var stack = [pos];
       var visited = [pos];
-      var _this = this;
 
       var lastDir;
       var delta;
@@ -246,7 +245,7 @@ define(["./rng"], function(rng) {
         for (i = 0; i < DMap.dirs.length; i++) {
           var dir = DMap.dirs[i];
           delta = DMap.deltas[dir];
-          if (_this.get(pos.x + 2 * delta.x, pos.y + 2 * delta.y) == DMap.WALL) {
+          if (this.get(pos.x + 2 * delta.x, pos.y + 2 * delta.y) == DMap.WALL) {
             nextDirs.push(dir);
           }
         }
