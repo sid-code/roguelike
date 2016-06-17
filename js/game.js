@@ -314,7 +314,7 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
   /// }}}
 
   /// Global keybinds {{{
-  Game.primaryKeybinds = {}
+  Game.primaryKeybinds = {};
   Game.primaryKeybinds[Game.keys.WAIT] = function(game) {
     // do nothing
     game.tick();
@@ -341,7 +341,7 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
     var action = this.getActionForKey(key);
 
     // If key doesn't bind to anything, don't do anything.
-    if (!action) return
+    if (!action) return;
 
     // Render the world.
     this.playerLook();
