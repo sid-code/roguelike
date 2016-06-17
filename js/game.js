@@ -99,7 +99,7 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
 
   /// Field of view calculation {{{
   // Shamelessly copied from
-  // http://www.roguebasin.com/index.php?title=LOS_using_strict_definition 
+  // http://www.roguebasin.com/index.php?title=LOS_using_strict_definition
   Game.prototype.castLine = function(map, x0, y0, x1, y1) {
     var sx, sy, xnext, ynext, dx, dy;
     var denom, dist;
@@ -128,7 +128,7 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
       }
     }
 
-    
+
   };
 
   // This function updates what the player can see.
@@ -190,7 +190,7 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
 
     var mapWidth = map.width;
     var mapHeight = map.height;
-    
+
     var x, y, tileX, tileY;
 
     // the >> 0 is a faster way to get the integer part of the number
