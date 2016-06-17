@@ -10,6 +10,8 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
 
     this.player = options.player;
 
+    this.output = options.output;
+
     this.config = {
       homeLevel: {
         width: (options.homeLevel || {}).width || 65,
@@ -229,8 +231,14 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
   };
   /// }}}
 
-  /// Player input {{{
+  /// Player I/O {{{
+  /// Output {{{
+  Game.prototype.echo = function(msg, color) {
+    this.output(msg, color);
+  };
+  /// }}}
 
+  /// Input {{{
   /// Key codes {{{
   Game.keys = {
     WAIT: 190, // dot
@@ -255,6 +263,7 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
     // Tick the world
     this.tick();
   };
+  /// }}}
 
   /// }}}
 

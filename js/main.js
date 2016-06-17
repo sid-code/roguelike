@@ -1,5 +1,7 @@
 define(["./game", "./actor"], function(Game, Actor) {
   var canvas = document.getElementById("viewport");
+  var output = document.getElementById("output");
+
   var seed = 1.18;
   var player = new Actor.Player({
     name: window.prompt("name your player"),
@@ -7,6 +9,18 @@ define(["./game", "./actor"], function(Game, Actor) {
 
   var game = new Game(canvas, {
     player: player,
+
+    // How the game should show text to the player
+    output: function(msg, color) {
+      if (!color) {
+        color = "black";
+      }
+      var line = document.createElement("div");
+      line.innerText = msg;
+      line.style.color = color;
+
+      output.appendChild(line);
+    },
 
     // The RNG's seed (needs to be a float x, 1 < x < 2)
     seed: seed,
