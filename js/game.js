@@ -295,8 +295,15 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
   Game.prototype.handleKey = function(key) {
     // Handle the specific key
 
-    // Tick the world
-    this.tick();
+    var action = this.getActionForKey(key);
+
+    // If key doesn't bind to anything, don't do anything.
+    if (!action) return
+
+    // Render the world.
+    this.playerLook();
+    this.draw();
+
   };
   /// }}}
 
