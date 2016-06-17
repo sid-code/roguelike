@@ -343,6 +343,8 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
     // If key doesn't bind to anything, don't do anything.
     if (!action) return;
 
+    action(this);
+
     // Render the world.
     this.playerLook();
     this.draw();
