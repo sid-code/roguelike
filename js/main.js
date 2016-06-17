@@ -52,7 +52,7 @@ define(["./game", "./actor"], function(Game, Actor) {
     },
   });
 
-  console.log("HI");
+  game.echo("Welcome " + player.name + "!");
 
   // Disable backspace navigation
   canvas.addEventListener("keydown", function(event) {
