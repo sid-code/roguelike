@@ -259,7 +259,7 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
     UP: 38,
     RIGHT: 39,
     DOWN: 40,
-  }
+  };
   ///}}}
 
   /// Keybind set accessing and switching {{{
