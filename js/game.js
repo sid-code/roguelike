@@ -24,6 +24,19 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
 
     this.initializeDungeon();
 
+    // The environment stack determines the keybinds for the player.
+    // It should be pushed and popped from. The top value will always be the
+    // default keybinds, like left/right/up/down and h/j/k/l for movement etc.
+    // When you step on an item that requires immediate action, it will push a
+    // new state that has only the keybinds for that item.
+    //
+    // The methods to push and pop from this stack are found in the I/O
+    // section.
+    this.envStack = [];
+
+    // Push the default keybinds onto the environment stack.
+    this.pushEnv(Game.primaryKeybinds);
+
     /// }}}
   };
 
@@ -249,11 +262,33 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
   }
   ///}}}
 
-  /// Global keybinds {{{
-  Game.keybinds = {};
-  Game.keybinds[Game.keys.WAIT] = function() {
+  /// Keybind set accessing and switching {{{
 
-  }
+  // newEnv should be an object like Game.primaryKeybinds
+  Game.prototype.pushEnv = function(newEnv) {
+    this.envStack.unshift(newEnv);
+  };
+
+  Game.prototype.popEnv = function(newEnv) {
+    return this.envStack.shift();
+  };
+
+  Game.prototype.getCurrentEnv = function() {
+    return this.envStack[0];
+  };
+
+  Game.prototype.getActionForKey = function(key) {
+    return this.getCurrentEnv()[key];
+  };
+
+  /// }}}
+
+  /// Global keybinds {{{
+  Game.primaryKeybinds = {}
+  Game.primaryKeybinds[Game.keys.WAIT] = function(game) {
+    // do nothing
+    game.tick();
+  };
 
   /// }}}
 
