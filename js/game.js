@@ -238,10 +238,40 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
     this.ticks++;
 
     // Tick monsters
-    
+
     // Heal player/monsters
 
   };
+  /// }}}
+
+  /// Player movement {{{
+
+  // The return value of this function is meaningful if the player used the
+  // move-until-wall shortcuts. It will return true if the player should keep
+  // moving and false if the player should stop; if there's a wall or a new
+  // monster comes into view.
+  Game.prototype.tryPlayerMove = function(dx, dy) {
+    var player = this.player;
+    var playerPos = player.pos;
+    var level = playerPos.dungeon.getLevel(playerPos.level);
+    var map = level.map;
+
+    var newx = playerPos.x + dx;
+    var newy = playerPos.y + dy;
+    var newTile = map.get(newx, newy);
+
+    if (!DMap.isFloorTile(newTile)) {
+      return false;
+    }
+
+    playerPos.x = newx;
+    playerPos.y = newy;
+
+    this.tick();
+
+    return true;
+  };
+
   /// }}}
 
   /// Player I/O {{{
@@ -288,6 +318,19 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
   Game.primaryKeybinds[Game.keys.WAIT] = function(game) {
     // do nothing
     game.tick();
+  };
+
+  Game.primaryKeybinds[Game.keys.RIGHT] = function(game) {
+    game.tryPlayerMove(1, 0);
+  };
+  Game.primaryKeybinds[Game.keys.LEFT] = function(game) {
+    game.tryPlayerMove(-1, 0);
+  };
+  Game.primaryKeybinds[Game.keys.UP] = function(game) {
+    game.tryPlayerMove(0, -1);
+  };
+  Game.primaryKeybinds[Game.keys.DOWN] = function(game) {
+    game.tryPlayerMove(0, 1);
   };
 
   /// }}}
