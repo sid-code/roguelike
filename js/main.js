@@ -54,7 +54,6 @@ define(["./game", "./actor"], function(Game, Actor) {
 
   game.echo("Welcome " + player.name + "!");
 
-  // Disable backspace navigation
   canvas.addEventListener("keydown", function(event) {
     var key = event.keyCode || event.which;
     game.handleKey(key, event.shiftKey);
