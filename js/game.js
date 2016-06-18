@@ -290,6 +290,17 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
     RIGHT: 39,
     DOWN: 40,
   };
+
+  // Combine the shift and keycode into a single keycode to use
+  // key: 0-255
+  // shift: true or false
+  Game.prepareKey = function(key, shift) {
+    var shiftPart = shift ? 1 : 0;
+    return (shift << 8) | key;
+  };
+
+  // For convenience
+  var shift = function(key) {return Game.prepareKey(key, true)};
   ///}}}
 
   /// Keybind set accessing and switching {{{
@@ -336,6 +347,8 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
   /// }}}
 
   Game.prototype.handleKey = function(key) {
+    // Note: key is not a typical key code; if shift was pressed, it has 256 added to it.
+
     // Handle the specific key
 
     var action = this.getActionForKey(key);

@@ -56,7 +56,7 @@ define(["./game", "./actor"], function(Game, Actor) {
 
   canvas.addEventListener("keydown", function(event) {
     var key = event.keyCode || event.which;
-    game.handleKey(key, event.shiftKey);
+    game.handleKey(Game.prepareKey(key, event.shiftKey));
     if (!event.ctrlKey) {
       event.preventDefault();
     }
