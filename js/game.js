@@ -37,6 +37,10 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
     // Push the default keybinds onto the environment stack.
     this.pushEnv(Game.primaryKeybinds);
 
+    // Timers
+    // Each timer is of the form {ticksLeft: int, callback: function(game)}
+    this.timers = {};
+
     /// }}}
   };
 
@@ -251,6 +255,26 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
 
     // Heal player/monsters
 
+    // Decrement timers and run callbacks if timers are up.
+    //
+    // Note: backwards iteration allows us to delete elements without screwing
+    // up the loop index.
+
+    var i, timer;
+    for (i = this.timers.length - 1; i >= 0; i++) {
+      this.timers[i].ticksLeft--;
+      if (this.timers[i].ticksLeft == 0) {
+        timer = this.timers.splice(i, 1)[0];
+        timer.callback(game);
+      }
+    }
+
+  };
+
+  Game.prototype.setTimer = function(ticks, callback) {
+    var timer = {ticksLeft: tick, callback: callback};
+    this.timers.push(timer);
+    return timer;
   };
   /// }}}
 
