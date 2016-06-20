@@ -3,6 +3,21 @@
  */
 
 define([], function() {
+  /*
+   * TODO: explain all of these
+   *
+   * options = {
+   *   name: the actor's name
+   *   stats: {
+   *     hp: max HP of actor,
+   *     str/dex/con/intl/wis/luck: corresponding stat of actor
+   *     speed: speed of actor
+   *     regenRate: regeneration rate of actor
+   *   },
+   *
+   *   level: level of actor,
+   * }
+   */
   var Actor = function(options) {
     this.name = options.name || "Anon";
     var stats = options.stats || {};
