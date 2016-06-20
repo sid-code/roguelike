@@ -157,8 +157,8 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
 
     // https://en.wikipedia.org/wiki/Midpoint_circle_algorithm
     var x, y, err;
-    var radius = 30;
-    while (radius > 25) {
+    var radius;
+    for (radius = 2; radius <= this.player.stats.lightRadius; radius++) {
       x = radius;
       y = 0;
       err = 0;
@@ -180,8 +180,6 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
         }
 
       }
-
-      radius -= 1;
     }
 
   };
