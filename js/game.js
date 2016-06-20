@@ -106,7 +106,7 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
       this.player.pos.level = level;
       this.player.pos.x = this.rng.nextInt(1, map.width);
       this.player.pos.y = this.rng.nextInt(1, map.height);
-    } while (map.get(this.player.pos.x, this.player.pos.y) != DMap.FLOOR);
+    } while (!DMap.isFloorTile(map.get(this.player.pos.x, this.player.pos.y)));
   };
 
   /// }}}
