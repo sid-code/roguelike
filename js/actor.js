@@ -58,8 +58,15 @@ define([], function() {
     this.pos.y += dy;
   };
 
+  /*
+   * Extra options on top of Actor's:
+   *
+   * lightRadius: how far the player can see
+   *
+   */
   var Player = function(options) {
     Actor.call(this, options);
+    this.stats.lightRadius = options.stats.lightRadius || 30;
   };
 
   Player.prototype = Object.create(Actor.prototype);
