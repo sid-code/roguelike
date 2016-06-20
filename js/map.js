@@ -26,7 +26,7 @@ define(["./rng"], function(rng) {
     this.minRoomSize = options.minRoomSize || 5;
     this.maxRoomSize = options.maxRoomSize || 11;
 
-    this.numRoomAttempts = options.numRoomAttempts;
+    this.numRoomAttempts = options.numRoomAttempts || 100;
 
     this.numExtraConnectors = options.numExtraConnectors || 10;
 
