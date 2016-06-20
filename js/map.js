@@ -110,7 +110,7 @@ define(["./rng"], function(rng) {
 
   // get and set for the seen grid
   DMap.prototype.getSeen = function(x, y) {
-    return get(this.seenGrid, this.width, this.height, x, y, 0);
+    return get(this.seenGrid, this.width, this.height, x, y, DMap.UNSEEN);
   };
 
   DMap.prototype.setSeen = function(x, y, val) {
