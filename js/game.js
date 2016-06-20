@@ -52,10 +52,12 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
 
 
   Game.prototype.initializeHomeLevel = function() {
+    var width = this.config.homeLevel.width;
+    var height = this.config.homeLevel.height;
 
     var homeLevel = new DMap({
-      width: this.config.homeLevel.width,
-      height: this.config.homeLevel.height,
+      width: width,
+      height: height,
       rng: this.rng,
     });
 
