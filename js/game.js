@@ -209,35 +209,28 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
     for (x = 0, tileX = playerPos.x - (horizontalTiles / 2 >> 0); x < horizontalTiles; x++, tileX++) {
       for (y = 0, tileY = playerPos.y - (verticalTiles / 2 >> 0); y < verticalTiles; y++, tileY++) {
         // Note: The following is temporary code that I'm using for now.
-
-        if (tileX < 0 || tileX >= mapWidth || tileY < 0 || tileY >= mapHeight) {
-          // The tile is out of bounds.
-          ctx.fillStyle = "grey";
-          ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+        var tile = map.get(tileX, tileY);
+        var seen = map.getSeen(tileX, tileY) != DMap.UNSEEN;
+        if (seen) {
+          switch (tile) {
+            case DMap.NOTHING:
+              ctx.fillStyle = "black"; break;
+            case DMap.WALL:
+              ctx.fillStyle = "grey"; break;
+            case DMap.FLOOR:
+              ctx.fillStyle = "lightgrey"; break;
+          }
         } else {
-          var tile = map.get(tileX, tileY);
-          var seen = map.getSeen(tileX, tileY) != DMap.UNSEEN;
-          if (seen) {
-            switch (tile) {
-              case DMap.NOTHING:
-                ctx.fillStyle = "black"; break;
-              case DMap.WALL:
-                ctx.fillStyle = "grey"; break;
-              case DMap.FLOOR:
-                ctx.fillStyle = "lightgrey"; break;
-            }
-          } else {
-            // Unseen tiles are black
-            ctx.fillStyle = "black";
-          }
+          // Unseen tiles are black
+          ctx.fillStyle = "black";
+        }
 
+        ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+
+        // Mark the player's tile red
+        if (tileX == playerPos.x && tileY == playerPos.y) {
+          ctx.fillStyle = "red";
           ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-
-          // Mark the player's tile red
-          if (tileX == playerPos.x && tileY == playerPos.y) {
-            ctx.fillStyle = "red";
-            ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-          }
         }
       }
     }
