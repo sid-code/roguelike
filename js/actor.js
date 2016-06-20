@@ -7,8 +7,9 @@ define([], function() {
     this.name = options.name || "Anon";
     var stats = options.stats || {};
 
+    this.hp = stats.hp;
+
     this.stats = {
-      hp: stats.hp,
       maxhp: stats.hp,
 
       str: stats.str,
