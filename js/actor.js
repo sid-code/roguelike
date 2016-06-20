@@ -8,6 +8,7 @@ define([], function() {
     var stats = options.stats || {};
 
     this.hp = stats.hp;
+    this.level = options.level || 1,
 
     this.stats = {
       maxhp: stats.hp,
