@@ -63,6 +63,14 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
 
     homeLevel.fillBorder();
 
+    // Everything on the home level is already known.
+    var x, y;
+    for (x = 0; x < width; x++) {
+      for (y = 0; y < width; y++) {
+        homeLevel.setSeen(x, y, DMap.SEEN);
+      }
+    }
+
     this.dungeon.addLevel(0, homeLevel);
   };
 
