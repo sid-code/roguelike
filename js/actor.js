@@ -21,6 +21,7 @@ define([], function() {
       luck: stats.luck,
 
       speed: stats.speed || 1,
+      regenRate: stats.regenRate || 1,
 
     };
 
