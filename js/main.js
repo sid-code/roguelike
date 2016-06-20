@@ -5,6 +5,7 @@ define(["./game", "./actor"], function(Game, Actor) {
   var seed = 1.18;
   var player = new Actor.Player({
     name: window.prompt("name your player"),
+    stats: {}, // TODO: class selection!
   });
 
   var game = new Game(canvas, {
