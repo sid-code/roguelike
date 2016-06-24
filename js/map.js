@@ -311,7 +311,6 @@ define(["./rng"], function(rng) {
       y = this.rng.nextInt(1, this.height);
     }
 
-    console.log(x, y);
     numTemp -= this.floodFill(x, y, DMap.FLOOR);
 
     while (true) {
