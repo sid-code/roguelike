@@ -39,7 +39,7 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dung
 
     // Timers
     // Each timer is of the form {ticksLeft: int, callback: function(game)}
-    this.timers = {};
+    this.timers = [];
 
     /// }}}
   };
