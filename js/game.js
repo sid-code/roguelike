@@ -183,6 +183,37 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dung
     }
 
   };
+
+  // This function gets all the monsters/items at x, y of a level
+  Game.prototype.getObjectsAt = function(level, x, y) {
+    // Note: under normal circumstances, this function should only ever return
+    // one monster because there can never be more than one monster on a tile.
+    // There, however, can be multiple items on the same tile.
+    var result = {items: [], monsters: []};
+
+    var i, item, monster;
+    for (i = 0; i < level.items.length; i++) {
+      item = level.items[i];
+      if (item.pos.x == x && item.pos.y == y) {
+        result.items.push(item);
+      }
+    }
+
+    for (i = 0; i < level.monsters.length; i++) {
+      monster = level.monster[i];
+      if (monster.pos.x == x && monster.pos.y == y) {
+        result.monsters.push(monster);
+      }
+    }
+
+    return result;
+  };
+
+  Game.prototype.getObjectsAtPlayer = function() {
+    var pos = this.player.pos;
+    var level = this.dungeon.getLevel(pos.level);
+    return this.getObjectsAt(level, pos.x, pos.y);
+  };
   /// }}}
 
   /// Rendering {{{
@@ -226,6 +257,18 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dung
         }
 
         ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+
+        // Check if this tile has any items/monsters to render.
+        var objects = this.getObjectsAt(playerLevel, tileX, tileY);
+
+        if (objects.items.length > 0) {
+          ctx.fillStyle = "darkgreen";
+          ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+        }
+        if (objects.monsters.length > 0) {
+          ctx.fillStyle = "darkred";
+          ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+        }
 
         // Mark the player's tile red
         if (tileX == playerPos.x && tileY == playerPos.y) {
