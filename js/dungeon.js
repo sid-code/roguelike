@@ -25,6 +25,27 @@ define([], function() {
     };
   };
 
+  Dungeon.prototype.placeItem = function(index, x, y, item) {
+    var level = this.getLevel(index);
+    item.pos.level = index;
+    item.pos.x = x;
+    item.pos.y = y;
+    level.items.push(item);
+  };
+
+  Dungeon.prototype.removeItem = function(item) {
+    var level = this.getLevel(item.level);
+    var index = level.items.indexOf(item);
+    if (index > -1) {
+      level.items.splice(index, 1);
+      item.pos.level = 0;
+      item.pos.x = 0;
+      item.pos.y = 0;
+    }
+
+    return item;
+  };
+
 
   return Dungeon;
 });
