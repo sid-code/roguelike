@@ -12,12 +12,28 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dung
 
     this.output = options.output;
 
+    var homeLevel = options.homeLevel || {};
+    var dungeon = options.dungeon || {};
+
     this.config = {
       homeLevel: {
-        width: (options.homeLevel || {}).width || 65,
-        height: (options.homeLevel || {}).height || 33,
+        width: homeLevel.width || 65,
+        height: homeLevel.height || 33,
       },
       tileSize: options.tileSize || 15,
+      dungeon: {
+        width: dungeon.width,
+        height: dungeon.height,
+
+        maxRoomSize: dungeon.maxRoomSize,
+        minRoomSize: dungeon.minRoomSize,
+
+        numRoomAttempts: dungeon.numRoomAttempts,
+
+        numExtraConnectors: dungeon.numExtraConnectors,
+
+        straightTendency: dungeon.straightTendency,
+      },
     };
 
     this.ticks = 0;
