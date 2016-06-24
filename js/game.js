@@ -311,7 +311,7 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dung
     // up the loop index.
 
     var i, timer;
-    for (i = this.timers.length - 1; i >= 0; i++) {
+    for (i = this.timers.length - 1; i >= 0; i--) {
       this.timers[i].ticksLeft--;
       if (this.timers[i].ticksLeft == 0) {
         timer = this.timers.splice(i, 1)[0];
