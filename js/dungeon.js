@@ -21,7 +21,6 @@ define([], function() {
     this.levels[index] = {
       items: [],
       monsters: [],
-      attractions: [],
       map: map
     };
   };
