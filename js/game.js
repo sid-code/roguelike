@@ -1,5 +1,5 @@
 
-define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, Actor) {
+define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dungeon, rng, Actor, Item) {
   var Game = function(canvas, options) {
     /// Constructor {{{
     this.canvas = canvas;
