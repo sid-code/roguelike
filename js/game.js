@@ -313,7 +313,7 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dung
     var i, timer;
     for (i = this.timers.length - 1; i >= 0; i--) {
       this.timers[i].ticksLeft--;
-      if (this.timers[i].ticksLeft == 0) {
+      if (this.timers[i].ticksLeft === 0) {
         timer = this.timers.splice(i, 1)[0];
         timer.callback(this);
       }
