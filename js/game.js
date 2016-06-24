@@ -322,7 +322,7 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dung
   };
 
   Game.prototype.setTimer = function(ticks, callback) {
-    var timer = {ticksLeft: tick, callback: callback};
+    var timer = {ticksLeft: ticks, callback: callback};
     this.timers.push(timer);
     return timer;
   };
