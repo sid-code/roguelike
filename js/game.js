@@ -367,13 +367,6 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dung
 
   /// Input {{{
   /// Key codes {{{
-  Game.keys = {
-    WAIT: 190, // dot
-    LEFT: 37,
-    UP: 38,
-    RIGHT: 39,
-    DOWN: 40,
-  };
 
   // Combine the shift and keycode into a single keycode to use
   // key: 0-255
@@ -384,7 +377,16 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dung
   };
 
   // For convenience
-  var shift = function(key) {return Game.prepareKey(key, true)};
+  var shift = function(key) {return Game.prepareKey(key, true);};
+
+  // The actual codes
+  Game.keys = {
+    WAIT: 190, // dot
+    LEFT: 37,
+    UP: 38,
+    RIGHT: 39,
+    DOWN: 40,
+  };
   ///}}}
 
   /// Keybind set accessing and switching {{{
