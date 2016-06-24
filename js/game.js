@@ -315,7 +315,7 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dung
       this.timers[i].ticksLeft--;
       if (this.timers[i].ticksLeft == 0) {
         timer = this.timers.splice(i, 1)[0];
-        timer.callback(game);
+        timer.callback(this);
       }
     }
 
