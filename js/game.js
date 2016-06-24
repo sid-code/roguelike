@@ -149,7 +149,7 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
   Game.prototype.playerLook = function() {
     var playerPos = this.player.pos;
     var px = playerPos.x, py = playerPos.y;
-    var playerLevel = playerPos.dungeon.getLevel(playerPos.level);
+    var playerLevel = this.dungeon.getLevel(playerPos.level);
 
     var map = playerLevel.map;
 
@@ -196,7 +196,7 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
     var verticalTiles = Math.floor(height / tileSize);
 
     var playerPos = this.player.pos;
-    var playerLevel = playerPos.dungeon.getLevel(playerPos.level);
+    var playerLevel = this.dungeon.getLevel(playerPos.level);
 
     var map = playerLevel.map;
 
@@ -278,7 +278,7 @@ define(["./map", "./dungeon", "./rng", "./actor"], function(DMap, Dungeon, rng, 
   Game.prototype.tryPlayerMove = function(dx, dy) {
     var player = this.player;
     var playerPos = player.pos;
-    var level = playerPos.dungeon.getLevel(playerPos.level);
+    var level = this.dungeon.getLevel(playerPos.level);
     var map = level.map;
 
     var newx = playerPos.x + dx;

@@ -42,7 +42,7 @@ define([], function() {
 
     this.affects = [],
 
-    this.pos = {dungeon: null, level: 0, x: 0, y: 0};
+    this.pos = {level: 0, x: 0, y: 0};
 
     this.inventory = {};
     this.equipped = {
