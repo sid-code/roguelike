@@ -1,11 +1,33 @@
+html, body {
+  width: 95%;
+  height: 95%;
+  background-color: #EEEEEE;
+}
+
 #viewport {
   outline: 0;
 }
 
+#main-layout td {
+  border: 1px solid black;
+}
+
 #output {
   /* TODO */
+  overflow-y: scroll;
+  height: 100%;
 }
+
 
 #stats {
   height: 100px;
+}
+
+#inventory {
+  width: 300px;
+}
+
+#affect {
+  width: 100%;
+
 }
