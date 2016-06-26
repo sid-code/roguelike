@@ -427,18 +427,34 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dung
 
     var newx = playerPos.x + dx;
     var newy = playerPos.y + dy;
+
+    // Check if the tile is a floor tile
     var newTile = map.get(newx, newy);
 
     if (!DMap.isFloorTile(newTile)) {
       return false;
     }
 
-    playerPos.x = newx;
-    playerPos.y = newy;
+    // Check if there is a monster on that tile. If so, try to attack it.
+    var objects = this.getObjectsAt(level, newx, newy);
+    if (objects.monsters.length > 0) {
+      // TODO: attack the monster
 
-    this.tick();
+      this.tick();
+      return false;
 
-    return true;
+    } else {
+      player.move(dx, dy);
+
+      // Call the announce function of each item on the new tile.
+      var i;
+      for (i = 0; i < objects.items.length; i++) {
+        objects.items[i].announce(this);
+      }
+
+      this.tick();
+      return true;
+    }
   };
 
   // This function tries to use a staircase. If "up" is true, then it'll try to
