@@ -115,14 +115,15 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dung
   Game.prototype.placePlayer = function(index) {
     var map = this.dungeon.getLevel(index).map;
 
-    // The loop is to ensure that the player doesn't get placed on
-    // a wall (or worse, nothing!)
-    do {
-      this.player.pos.dungeon = dungeon;
-      this.player.pos.level = level;
-      this.player.pos.x = this.rng.nextInt(1, map.width);
-      this.player.pos.y = this.rng.nextInt(1, map.height);
-    } while (!DMap.isFloorTile(map.get(this.player.pos.x, this.player.pos.y)));
+    this.player.pos.level = index;
+
+    var randomPos = map.getRandomFloorTile();
+    if (randomPos.x == -1) {
+      throw "could not place player because there were no floor tiles on level " + index;
+    }
+
+    this.player.pos.x = randomPos.x;
+    this.player.pos.y = randomPos.y;
   };
 
   /// }}}
