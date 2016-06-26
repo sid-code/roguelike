@@ -1,5 +1,5 @@
 
-define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dungeon, rng, Actor, Item) {
+define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(DMap, Dungeon, rng, Actor, Item, Util) {
   var Game = function(canvas, options) {
     /// Constructor {{{
     this.canvas = canvas;
@@ -56,6 +56,13 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dung
     // Timers
     // Each timer is of the form {ticksLeft: int, callback: function(game)}
     this.timers = [];
+
+    // What the player can see (used for rendering effects - what can be seen
+    // is brighter than what has already been seen but can't currently be
+    // seen). Coordinates are stored as paired integers (see utils.js, pair
+    // function) as keys and the value is always 1 (so if the key exists then
+    // it's seen, and if not then it's not.)
+    this.currentSeen = {};
 
     /// }}}
   };
@@ -212,6 +219,21 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dung
   /// }}}
 
   /// Field of view calculation {{{
+
+
+  // Sets x, y as seen on the map and also adds it to the currently seen "hash
+  // set". This is cleared every time the player looks again but the map seen
+  // is not.
+  Game.prototype.see = function(map, x, y) {
+    map.setSeen(x, y, DMap.SEEN);
+    this.currentSeen[Util.pair(x, y)] = 1;
+  };
+
+  Game.prototype.canCurrentlySee = function(x, y) {
+    var key = Util.pair(x, y);
+    return key in this.currentSeen;
+  }
+
   // Shamelessly copied from
   // http://www.roguebasin.com/index.php?title=LOS_using_strict_definition
   Game.prototype.castLine = function(map, x0, y0, x1, y1) {
@@ -226,7 +248,8 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dung
 
     denom = Math.sqrt(dx * dx + dy * dy);
     while (xnext != x1 || ynext != y1) {
-      map.setSeen(xnext, ynext, DMap.SEEN);
+      this.see(map, xnext, ynext);
+
       if (map.get(xnext, ynext) == DMap.WALL) {
         // It's a wall, so we're done.
         return;
@@ -248,12 +271,17 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dung
   // This function updates what the player can see.
   Game.prototype.playerLook = function() {
     var playerPos = this.player.pos;
+
+    // This stores what the player can currently see so it can be rendered as
+    // such (brighter than the rest), see constructor for more information.
+    this.currentSeen = {};
+
     var px = playerPos.x, py = playerPos.y;
     var playerLevel = this.dungeon.getLevel(playerPos.level);
 
     var map = playerLevel.map;
 
-    map.setSeen(playerPos.x, playerPos.y, DMap.SEEN);
+    this.see(map, playerPos.x, playerPos.y);
 
     // https://en.wikipedia.org/wiki/Midpoint_circle_algorithm
     var x, y, err;
@@ -342,12 +370,14 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dung
         // Note: The following is temporary code that I'm using for now.
         var tile = map.get(tileX, tileY);
         var seen = map.getSeen(tileX, tileY) != DMap.UNSEEN;
+        var currentlySeen = this.canCurrentlySee(tileX, tileY);
+
         if (seen) {
           switch (tile) {
             case DMap.NOTHING:
               ctx.fillStyle = "black"; break;
             case DMap.WALL:
-              ctx.fillStyle = "grey"; break;
+              ctx.fillStyle = "brown"; break;
             case DMap.FLOOR:
               ctx.fillStyle = "lightgrey"; break;
           }
@@ -375,6 +405,15 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dung
         if (tileX == playerPos.x && tileY == playerPos.y) {
           ctx.fillStyle = "red";
           ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+        }
+
+        // If the tile has been seen but is not currently visible, then darken
+        // it.
+        if (!currentlySeen) {
+          ctx.fillStyle = "black";
+          ctx.globalAlpha = 0.2;
+          ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+          ctx.globalAlpha = 1;
         }
       }
     }
