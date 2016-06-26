@@ -34,8 +34,8 @@ define(["./game", "./actor"], function(Game, Actor) {
 
     // Dungeon configuration
     dungeon: {
-      width: 255,
-      height: 127,
+      width: 121,
+      height: 71,
 
       // Room size control
       minRoomSize: 5,
@@ -45,10 +45,10 @@ define(["./game", "./actor"], function(Game, Actor) {
       numRoomAttempts: 400,
 
       // Higher = more connected dungeon
-      numExtraConnectors: 20,
+      numExtraConnectors: 40,
 
       // 0-1, how straight should corridors be?
-      straightTendency: 0.8
+      straightTendency: 0.7
 
     },
   });
