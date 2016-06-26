@@ -154,62 +154,15 @@ define(["./rng"], function(rng) {
   // Function to place rooms in the dungeon. The parameter signifies how many
   // attempts should be made.
   DMap.prototype.generateRooms = function(numTries) {
-    // checks if the room at px, py with dims w, h is available
-    // (e.g. does not overlap any features)
     this.rooms = [];
     var _this = this;
 
-    var checkRoom = function(room) {
-      var i;
-
-      if (room.x + room.w >= _this.width || room.y + room.h >= _this.height) {
-        return false;
-      }
-
-      for (i = 0; i < _this.rooms.length; i++) {
-        var other = _this.rooms[i];
-        if (room.overlap(other)) return false;
-      }
-
-      return true;
-    };
-
-    // draws a room at its position
-    var drawRoom = function(room) {
-      var px = room.x, py = room.y,
-          w = room.w, h = room.h;
-      var x, y;
-      for (x = px; x <= px + w; x++) {
-        for (y = py; y <= py + h; y++) {
-          if (x == px || y == py || x == px + w || y == py + h) {
-            _this.set(x, y, DMap.WALL);
-          } else {
-            _this.set(x, y, DMap.TEMP);
-          }
-        }
-      }
-
-      _this.rooms.push(room);
-
-    };
-
-    var genRandomRoom = function() {
-      var x, y, w, h; // all of these must be odd;
-
-      x = _this.rng.nextInt(0, (_this.width-1) / 2) * 2;
-      y = _this.rng.nextInt(0, (_this.height-1) / 2) * 2;
-      w = _this.rng.nextInt((_this.minRoomSize-1) / 2, (_this.maxRoomSize+1) / 2) * 2;
-      h = _this.rng.nextInt((_this.minRoomSize-1) / 2, (_this.maxRoomSize+1) / 2) * 2;
-
-      return new DMap.Room(x, y, w, h);
-    };
-
     var i, room, rx, ry, rw, rh;
     for (i = 0; i < numTries; i++) {
-      room = genRandomRoom();
+      room = DMap.Room.genRandomRoom(this);
 
-      if (checkRoom(room)) {
-        drawRoom(room);
+      if (room.checkOnMap(this)) {
+        room.drawOn(this);
       }
     }
   };
@@ -479,7 +432,53 @@ define(["./rng"], function(rng) {
 
     return true;
   };
+ 
+  // Checks if the room can be drawn on the map without overlapping other
+  // rooms or going out of bounds.
+  DMap.Room.prototype.checkOnMap = function(map) {
+    var i;
 
+    if (this.x + this.w >= map.width || this.y + this.h >= map.height) {
+      return false;
+    }
+
+    for (i = 0; i < map.rooms.length; i++) {
+      var other = map.rooms[i];
+      if (this.overlap(other)) return false;
+    }
+
+    return true;
+  };
+
+  // draws a room at its position
+  DMap.Room.prototype.drawOn = function(map) {
+    var px = this.x, py = this.y,
+        w = this.w, h = this.h;
+    var x, y;
+    for (x = px; x <= px + w; x++) {
+      for (y = py; y <= py + h; y++) {
+        if (x == px || y == py || x == px + w || y == py + h) {
+          map.set(x, y, DMap.WALL);
+        } else {
+          map.set(x, y, DMap.TEMP);
+        }
+      }
+    }
+
+    map.rooms.push(this);
+
+  };
+
+  DMap.Room.genRandomRoom = function(map) {
+    var x, y, w, h; // all of these must be odd;
+
+    x = map.rng.nextInt(0, (map.width-1) / 2) * 2;
+    y = map.rng.nextInt(0, (map.height-1) / 2) * 2;
+    w = map.rng.nextInt((map.minRoomSize-1) / 2, (map.maxRoomSize+1) / 2) * 2;
+    h = map.rng.nextInt((map.minRoomSize-1) / 2, (map.maxRoomSize+1) / 2) * 2;
+
+    return new DMap.Room(x, y, w, h);
+  };
 
   return DMap;
 
