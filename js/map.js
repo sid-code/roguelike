@@ -145,10 +145,8 @@ define(["./rng"], function(rng) {
     this.generateRooms(this.numRoomAttempts);
     this.generateMaze();
     this.connectComponents();
-    while (this.killDeadEnds());
     this.addExtraConnectors();
-
-
+    while (this.killDeadEnds());
   };
 
   // Function to place rooms in the dungeon. The parameter signifies how many
