@@ -351,24 +351,25 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dung
             case DMap.FLOOR:
               ctx.fillStyle = "lightgrey"; break;
           }
+
+          // Check if this tile has any items/monsters to render.
+          var objects = this.getObjectsAt(playerLevel, tileX, tileY);
+
+          if (objects.items.length > 0) {
+            ctx.fillStyle = "darkgreen";
+          }
+          if (objects.monsters.length > 0) {
+            ctx.fillStyle = "darkred";
+          }
+
+          ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+
         } else {
           // Unseen tiles are black
           ctx.fillStyle = "black";
-        }
-
-        ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-
-        // Check if this tile has any items/monsters to render.
-        var objects = this.getObjectsAt(playerLevel, tileX, tileY);
-
-        if (objects.items.length > 0) {
-          ctx.fillStyle = "darkgreen";
           ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
         }
-        if (objects.monsters.length > 0) {
-          ctx.fillStyle = "darkred";
-          ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-        }
+
 
         // Mark the player's tile red
         if (tileX == playerPos.x && tileY == playerPos.y) {
