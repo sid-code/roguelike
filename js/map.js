@@ -387,7 +387,7 @@ define(["./rng"], function(rng) {
     var x, y;
     for (x = 1; x < this.width - 1; x++) {
       for (y = 1; y < this.height - 1; y++) {
-        if (this.get(x, y) == DMap.FLOOR && this.countWallsAround(x, y) == 3) {
+        if (DMap.isFloorTile(this.get(x, y)) && this.countWallsAround(x, y) == 3) {
           this.set(x, y, DMap.WALL);
           result = true;
         }
