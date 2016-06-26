@@ -296,11 +296,13 @@ define(["./rng"], function(rng) {
       y = this.rng.nextInt(1, this.height);
     }
 
+
     numTemp -= this.floodFill(x, y, DMap.FLOOR);
 
+    var connectors;
+
     while (true) {
-      var connectors = this.getConnectors(DMap.TEMP, DMap.FLOOR);
-      if (connectors.length === 0) break;
+      connectors = this.getConnectors(DMap.TEMP, DMap.FLOOR);
 
       var randomConnector = this.rng.sample(connectors);
 
@@ -317,6 +319,11 @@ define(["./rng"], function(rng) {
           numTemp -= numFilled;
 
         }
+
+      }
+
+      if (numTemp == 0) {
+        break;
       }
 
     }
@@ -341,9 +348,15 @@ define(["./rng"], function(rng) {
     var oldTile = this.get(x, y);
     var stack = [{x: x, y: y}];
     while (stack.length > 0) {
-      tilesChanged++;
-
       var pos = stack.pop();
+
+      if (this.get(pos.x, pos.y) == oldTile) {
+        // This should only change when we *actually* change the color of the
+        // tile.  The way this algorithm works, it might attempt to change some
+        // tiles twice so we don't want those to be overcounted.
+        tilesChanged++;
+      }
+
       this.set(pos.x, pos.y, newTile);
 
       var px = pos.x, py = pos.y;
