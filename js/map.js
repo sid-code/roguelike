@@ -227,6 +227,38 @@ define(["./rng"], function(rng) {
     return false;
   };
 
+  // Used whenever we need to place an object on a floor tile.
+  //
+  // The parameter "exclude" should be an array of points {x: x, y: y} which
+  // should NOT be chosen, even if they are floor tiles. If omitted, an empty
+  // array is used.
+  DMap.prototype.getRandomFloorTile = function(exclude) {
+    if (!exclude) {
+      exclude = [];
+    }
+
+    var x, y, count = 0;
+    do {
+      x = this.rng.nextInt(1, this.width);
+      y = this.rng.nextInt(1, this.height);
+
+      // Make sure we don't have an infinite loop.
+      count++;
+      if (count > 200) {
+        return {x: -1, y: -1};
+      }
+
+      // Don't use any points in exclude.
+      if (exclude.find(function(p) { return p.x == x && p.y == y; })) {
+        continue;
+      }
+
+
+    } while (!DMap.isFloorTile(this.get(x, y)));
+
+    return {x: x, y: y};
+  };
+
   // Generates a maze around the rooms.
   DMap.prototype.generateMaze = function() {
     while (true) {
