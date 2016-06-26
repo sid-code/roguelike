@@ -112,8 +112,8 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dung
 
   };
 
-  Game.prototype.placePlayer = function(dungeon, level) {
-    var map = this.dungeon.getLevel(level).map;
+  Game.prototype.placePlayer = function(index) {
+    var map = this.dungeon.getLevel(index).map;
 
     // The loop is to ensure that the player doesn't get placed on
     // a wall (or worse, nothing!)
