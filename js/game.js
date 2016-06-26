@@ -62,12 +62,14 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dung
 
   /// Initialization {{{
 
-  // This will initialize the dungeon. This will NOT draw all the levels because
-  // they are generated on-demand.
+  // This will initialize the dungeon.
   Game.prototype.initializeDungeon = function() {
     this.initializeHomeLevel();
+    var i;
 
-    this.placePlayer(this.dungeon, 0);
+    this.placeStaircases(0, 1);
+
+    this.placePlayer(0);
   };
 
 
@@ -94,6 +96,9 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dung
     this.dungeon.addLevel(0, homeLevel);
   };
 
+  Game.prototype.isLevelInitialized = function(index) {
+    return !!this.dungeon.getLevel(index);
+  };
   Game.prototype.initializeDungeonLevel = function(index) {
     var map = new DMap({
       width: this.config.dungeon.width,
@@ -106,9 +111,72 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dung
       rng: this.rng,
     });
 
-    map.generate();
+    // Make sure staircases match up: check the previous and next levels for
+    // staircases and keep regenerating until those squares are floor. Then,
+    // place staircases there.
+    var upStaircasePos = null;
+    var downStaircasePos = null;
+    var above = this.dungeon.getLevel(index - 1);
+    var below = this.dungeon.getLevel(index + 1);
+    var i, item;
+
+    if (above) {
+      for (i = 0; i < above.items.length; i++) {
+        item = above.items[i];
+        if (item.constructor == Item.Staircase) {
+          upStaircasePos = {x: item.pos.x, y: item.pos.y};
+        }
+      }
+    }
+    if (below) {
+      for (i = 0; i < below.items.length; i++) {
+        item = below.items[i];
+        if (item.constructor == Item.Staircase) {
+          downStaircasePos = {x: item.pos.x, y: item.pos.y};
+        }
+      }
+    }
+
+
+    // This is really stupid.
+    // TODO: make this not stupid.
+    // (it's stupid because it basically just throws a fit and regenerates the
+    // map if certain tiles aren't floor tiles (where the staircases need to
+    // connect). A more robust way to do this is to modify the map generation
+    // algorithm to allow the generator to specify tiles that need to be floor.
+    do {
+      map.generate();
+    } while ((upStaircasePos && !DMap.isFloorTile(map.get(upStaircasePos.x, upStaircasePos.y))) ||
+             (downStaircasePos && !DMap.isFloorTile(map.get(downStaircasePos.x, downStaircasePos.x))));
+
+    var randomPos;
+    var exclude = [];
+
+    if (!upStaircasePos) {
+      randomPos = map.getRandomFloorTile();
+      exclude.push(randomPos);
+      if (randomPos1.x == -1) {
+        throw "could not place up staircase because there were no floor tiles on level " + index;
+      }
+
+      upStaircasePos = {x: randomPos.x, y: randomPos.y};
+    }
+
+    if (!downStaircasePos) {
+      randomPos = map.getRandomFloorTile(exclude);
+      if (randomPos.x == -1) {
+        throw "could not place down staircase because there were no floor tiles on level " + index;
+      }
+
+      downStaircasePos = {x: randomPos.x, y: randomPos.y};
+    }
 
     this.dungeon.addLevel(index, map);
+    var upsc = new Item.Staircase({up: true});
+    this.dungeon.placeItem(index, upStaircasePos.x, upStaircasePos.y, upsc);
+    var downsc = new Item.Staircase({up: false});
+    this.dungeon.placeItem(index, downStaircasePos.x, downStaircasePos.y, downsc);
+
 
   };
 
@@ -124,6 +192,21 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dung
 
     this.player.pos.x = randomPos.x;
     this.player.pos.y = randomPos.y;
+  };
+
+  // Places a down staircase on level
+  Game.prototype.placeStaircases = function(index) {
+    var map = this.dungeon.getLevel(index).map;
+
+    var randomPos = map.getRandomFloorTile();
+    if (randomPos.x == -1) {
+      throw "could not place staircase because there were no floor tiles on level " + index;
+    }
+
+
+    // fromLevel gets a down staircase and toLevel gets an up staircase
+    var sc = new Item.Staircase({up: false});
+    this.dungeon.placeItem(index, randomPos.x, randomPos.y, sc);
   };
 
   /// }}}
@@ -357,6 +440,47 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dung
     return true;
   };
 
+  // This function tries to use a staircase. If "up" is true, then it'll try to
+  // climb up. If "up" is false then it'll try to climb down.
+  Game.prototype.tryStaircase = function(up) {
+    var objects = this.getObjectsAtPlayer();
+
+    // These two variables hold whether the current tile has an up or down
+    // staircase.
+    var upsc = false, downsc = false;
+
+    var i, item;
+    for (i = 0; i < objects.items.length; i++) {
+      item = objects.items[i];
+      if (item.constructor == Item.Staircase) {
+        upsc = item.up;
+        downsc = !item.up;
+        break;
+      }
+    }
+
+    if (up) {
+      if (upsc) {
+        this.shiftPlayerLevel(-1);
+      } else {
+        this.echo("There is no up staircase here.");
+      }
+    } else {
+      if (downsc) {
+        this.shiftPlayerLevel(1);
+      } else {
+        this.echo("There is no down staircase here.");
+      }
+    }
+  };
+
+  Game.prototype.shiftPlayerLevel = function(numLevels) {
+    this.player.pos.level += numLevels;
+    if (!this.isLevelInitialized(this.player.pos.level)) {
+      this.initializeDungeonLevel(this.player.pos.level);
+    }
+  };
+
   /// }}}
 
   /// Player I/O {{{
@@ -387,6 +511,9 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dung
     UP: 38,
     RIGHT: 39,
     DOWN: 40,
+
+    LESSTHAN: shift(188),
+    GREATERTHAN: shift(190),
   };
   ///}}}
 
@@ -429,6 +556,13 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item"], function(DMap, Dung
   };
   Game.primaryKeybinds[Game.keys.DOWN] = function(game) {
     game.tryPlayerMove(0, 1);
+  };
+
+  Game.primaryKeybinds[Game.keys.LESSTHAN] = function(game) {
+    game.tryStaircase(false);
+  };
+  Game.primaryKeybinds[Game.keys.GREATERTHAN] = function(game) {
+    game.tryStaircase(true);
   };
 
   /// }}}
