@@ -403,6 +403,7 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
     }
 
   };
+
   /// }}}
 
   /// Game "tick" {{{

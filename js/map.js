@@ -1,7 +1,7 @@
 /*
  * This code describes a single level of the dungeon, or a "map".
  *
- * The "generate" function generates a rooms-and-corridors map for 
+ * The "generate" function generates a rooms-and-corridors map for
  */
 
 define(["./rng"], function(rng) {
@@ -106,7 +106,7 @@ define(["./rng"], function(rng) {
   /*
    * Member functions
    */
-  
+
   // get and set for normal grid
   DMap.prototype.get = function(x, y) {
     return get(this.grid, this.width, this.height, x, y, DMap.NOTHING);
