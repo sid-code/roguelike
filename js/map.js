@@ -89,8 +89,8 @@ define(["./rng"], function(rng) {
   // can be walked on.)
   DMap.isFloorTile = function(tile) {
     return tile == DMap.FLOOR;
-  }
-  
+  };
+
   // Helper functions to treat 1-d array as 2-d
   // If x, y is out of bounds, return defaultValue
   var get = function(array, width, height, x, y, defaultValue) {
