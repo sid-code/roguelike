@@ -126,14 +126,22 @@ define(["./rng"], function(rng) {
     }
   };
 
-  DMap.prototype.fillBorder = function() {
+  // fills the map with a border of a wall. If fillFloor is true (which is the
+  // default value), then the floor will be filled too.
+  DMap.prototype.fillBorder = function(fillFloor) {
+    if (fillFloor == null) {
+      fillFloor = true;
+    }
+
     var x, y;
     for (x = 0; x < this.width; x++) {
       for (y = 0; y < this.height; y++) {
         if (x === 0 || y === 0 || x == this.width - 1 || y == this.height - 1) {
           this.set(x, y, DMap.WALL);
         } else {
-          this.set(x, y, DMap.FLOOR);
+          if (fillFloor) {
+            this.set(x, y, DMap.FLOOR);
+          }
         }
       }
     }
