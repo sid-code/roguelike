@@ -4,6 +4,9 @@ require(["./map", "./rng"], function(DMap, rng) {
 
   var cnv = document.getElementById("viewport");
   var ctx = cnv.getContext("2d");
+
+  var seed = Math.random() + 1;
+  console.log("Seed: ", seed);
   
   var map = new DMap({
     width: 121,
@@ -18,7 +21,7 @@ require(["./map", "./rng"], function(DMap, rng) {
     numExtraConnectors: 30,
     connectorThickness: 1,
     straightTendency: 0.8,
-    rng: new rng(Math.random() + 1)
+    rng: new rng(seed)
   });
 
   map.generate();
