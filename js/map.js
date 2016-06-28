@@ -545,9 +545,17 @@ define(["./rng"], function(rng) {
     var connectors = this.getConnectors(DMap.FLOOR, DMap.FLOOR);
     var numExtraConnectors = this.numExtraConnectors;
     while (numExtraConnectors > 0) {
-      if (connectors.length == 0) break;
+      if (connectors.length === 0) break;
       var connector = this.rng.sampleAndRemove(connectors);
-      this.set(connector.x, connector.y, DMap.FLOOR);
+      var x, y;
+      var thickness = this.connectorThickness - 1;
+      for (x = connector.x - thickness; x <= connector.x + thickness; x++) {
+        for (y = connector.y - thickness; y <= connector.y + thickness; y++) {
+          if (x > 0 && x < this.width - 1 && y > 0 && y < this.height - 1) {
+            this.set(x, y, DMap.FLOOR);
+          }
+        }
+      }
       numExtraConnectors--;
     }
   };
