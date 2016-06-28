@@ -203,8 +203,6 @@ define(["./rng"], function(rng) {
       }
     }
 
-    console.log(birth);
-
     for (i = 0; i < 5; i++) {
       runCellularAutomataStep(grid, {
         width: width,
