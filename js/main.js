@@ -1,6 +1,5 @@
 define(["./game", "./actor"], function(Game, Actor) {
   var canvas = document.getElementById("viewport");
-  var output = document.getElementById("output");
 
   var seed = 1.18;
   var player = new Actor.Player({
@@ -13,18 +12,13 @@ define(["./game", "./actor"], function(Game, Actor) {
 
     // How the game should show text to the player
     output: function(msg, color) {
-      if (!color) {
-        color = "black";
-      }
-      var line = document.createElement("div");
-      line.innerText = msg;
-      line.style.color = color;
-
-      output.appendChild(line);
+      console.log(msg);
     },
 
     // The RNG's seed (needs to be a float x, 1 < x < 2)
     seed: seed,
+
+    tileSize: 16,
 
     // How big should the home level be?
     homeLevel: {
@@ -65,4 +59,22 @@ define(["./game", "./actor"], function(Game, Actor) {
 
   game.handleKey(190);
 
+  // Auto resize canvas
+  var resizeCanvas = function() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    // This will clear the canvas but that's ok because it will be redrawn at
+    // the next frame
+  };
+  resizeCanvas();
+
+  window.addEventListener("resize", resizeCanvas, false);
+
+  // Render loop
+  var startRenderLoop = function() {
+    game.draw();
+    window.requestAnimationFrame(startRenderLoop);
+  };
+
+  startRenderLoop();
 });
