@@ -405,6 +405,7 @@ define(["./rng"], function(rng) {
 
     while (true) {
       connectors = this.getConnectors(DMap.TEMP, DMap.FLOOR);
+      if (connectors.length == 0) break;
 
       var randomConnector = this.rng.sample(connectors);
 
