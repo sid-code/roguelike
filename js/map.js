@@ -429,6 +429,14 @@ define(["./rng"], function(rng) {
       }
 
     }
+
+    // Remove all residual TEMP tiles.
+    var x, y;
+    for (x = 0; x < this.width; x++) {
+      for (y = 0; y < this.height; y++) {
+        if (this.get(x, y) == DMap.TEMP) { this.set(x, y, DMap.WALL); }
+      }
+    }
   };
 
   DMap.prototype.getConnectors = function(tileFrom, tileTo) {
