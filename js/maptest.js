@@ -38,6 +38,8 @@ require(["./map", "./rng"], function(DMap, rng) {
           ctx.fillStyle = "black"; break;
         case DMap.TEMP:
           ctx.fillStyle = "green"; break;
+        case DMap.TEMP2:
+          ctx.fillStyle = "darkgreen"; break;
         case DMap.NOTHING:
           ctx.fillStyle = "yellow"; break;
       }
