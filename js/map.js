@@ -25,19 +25,26 @@ define(["./rng"], function(rng) {
 
     this.minRoomSize = options.minRoomSize || 5;
     this.maxRoomSize = options.maxRoomSize || 11;
+    this.allowRoomOverlap = !!options.allowRoomOverlap;
 
     this.numRoomAttempts = options.numRoomAttempts || 100;
 
+    this.cavernWidth = options.cavernWidth || 24;
+    this.cavernHeight = options.cavernHeight || 10;
+    this.numCaves = options.numCaves || 20;
+    this.caveSetting = options.caveSetting || [];
+
     this.numExtraConnectors = options.numExtraConnectors || 10;
+    this.connectorThickness = options.connectorThickness || 1;
 
     this.straightTendency = options.straightTendency || 0.5;
 
-    if (!this.width || this.width < DMap.limits.width.min || 
+    if (!this.width || this.width < DMap.limits.width.min ||
                        this.width > DMap.limits.width.max) {
       throw "invalid map width, must be within " +
             DMap.limits.width.min + ".." + DMap.limits.width.max + ".";
     }
-    if (!this.height || this.height < DMap.limits.height.min || 
+    if (!this.height || this.height < DMap.limits.height.min ||
                         this.height > DMap.limits.height.max) {
       throw "invalid map width, must be within " +
             DMap.limits.height.min + ".." + DMap.limits.height.max + ".";

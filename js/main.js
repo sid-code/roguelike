@@ -32,17 +32,35 @@ define(["./game", "./actor"], function(Game, Actor) {
       height: 71,
 
       // Room size control
-      minRoomSize: 5,
-      maxRoomSize: 11,
+      minRoomSize: 7,
+      maxRoomSize: 19,
+
+      // Allow the rooms to overlap? (Allows dungeon to have tons of rooms)
+      // Turn off for a more maze-like dungeon.
+      allowRoomOverlap: true,
       
       // Higher = more rooms (can't guarantee how many though)
-      numRoomAttempts: 400,
+      numRoomAttempts: 800,
 
       // Higher = more connected dungeon
-      numExtraConnectors: 40,
+      numExtraConnectors: 30,
+
+      // Vague constraints on cave dimensions. This does not guarantee caves of
+      // size 24x24 but generally the bigger these get, the fatter or taller
+      // caves get.
+      caveWidth: 24,
+      caveHeight: 24,
+
+      // How many caves should be placed on the map?
+      numCaves: 20,
+
+      // How fat should the connectors be? 1 = single square, 2 = 3x3, 3 = 5x5,
+      // etc. (A connector is a block of floor tiles randomly placed to connect
+      // components of the dungeon together)
+      connectorThickness: 1,
 
       // 0-1, how straight should corridors be?
-      straightTendency: 0.7
+      straightTendency: 0.8
 
     },
   });

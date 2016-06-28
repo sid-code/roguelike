@@ -6,12 +6,17 @@ require(["./map", "./rng"], function(DMap, rng) {
   var ctx = cnv.getContext("2d");
   
   var map = new DMap({
-    width: 101,
-    height: 51,
+    width: 121,
+    height: 71,
     minRoomSize: 7,
-    maxRoomSize: 13,
-    numRoomAttempts: 500,
-    numExtraConnectors: 40,
+    maxRoomSize: 19,
+    allowRoomOverlap: true,
+    numRoomAttempts: 800,
+    caveHeight: 10,
+    caveWidth: 10,
+    caveSetting: [6,7,8],
+    numExtraConnectors: 30,
+    connectorThickness: 1,
     straightTendency: 0.8,
     rng: new rng(Math.random() + 1)
   });
