@@ -21,20 +21,8 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
         height: homeLevel.height || 33,
       },
       tileSize: options.tileSize || 15,
-      dungeon: {
-        width: dungeon.width,
-        height: dungeon.height,
-
-        maxRoomSize: dungeon.maxRoomSize,
-        minRoomSize: dungeon.minRoomSize,
-
-        numRoomAttempts: dungeon.numRoomAttempts,
-
-        numExtraConnectors: dungeon.numExtraConnectors,
-
-        straightTendency: dungeon.straightTendency,
-      },
-    };
+      dungeon: dungeon,
+    }
 
     this.ticks = 0;
 
@@ -107,16 +95,12 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
     return !!this.dungeon.getLevel(index);
   };
   Game.prototype.initializeDungeonLevel = function(index) {
-    var map = new DMap({
-      width: this.config.dungeon.width,
-      height: this.config.dungeon.height,
-      minRoomSize: this.config.dungeon.minRoomSize,
-      maxRoomSize: this.config.dungeon.maxRoomSize,
-      numRoomAttempts: this.config.dungeon.numRoomAttempts,
-      numExtraConnectors: this.config.dungeon.numExtraConnectors,
-      straightTendency: this.config.dungeon.straightTendency,
-      rng: this.rng,
-    });
+    // This creates an object with prototype of this.config.dungeon that will
+    // be passed into the map. This DOES NOT clone the dungeon configuration
+    // object.
+    var mapConfig = Object.create(this.config.dungeon);
+    mapConfig.rng = this.rng;
+    var map = new DMap(mapConfig);
 
     // Make sure staircases match up: check the previous and next levels for
     // staircases and keep regenerating until those squares are floor. Then,
