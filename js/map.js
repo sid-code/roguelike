@@ -426,7 +426,7 @@ define(["./rng"], function(rng) {
 
       }
 
-      if (numTemp == 0) {
+      if (numTemp === 0) {
         break;
       }
 
