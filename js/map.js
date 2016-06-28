@@ -227,11 +227,12 @@ define(["./rng"], function(rng) {
     this.rooms = [];
     var _this = this;
 
-    var i, room, rx, ry, rw, rh;
+    var i, room;
+
     for (i = 0; i < numTries; i++) {
       room = DMap.Room.genRandomRoom(this);
 
-      if (room.checkOnMap(this)) {
+      if (room.checkOnMap(this, this.allowRoomOverlap)) {
         room.drawOn(this);
       }
     }
@@ -573,19 +574,25 @@ define(["./rng"], function(rng) {
 
     return true;
   };
- 
-  // Checks if the room can be drawn on the map without overlapping other
-  // rooms or going out of bounds.
-  DMap.Room.prototype.checkOnMap = function(map) {
+
+  // Checks if the room can be drawn on the map. If checkOverlap is true
+  // (default value if not provided), then it will be checked to see if it
+  // doesn't overlap other rooms.
+  DMap.Room.prototype.checkOnMap = function(map, checkOverlap) {
+    if (checkOverlap == null) {
+      checkOverlap = true;
+    }
     var i;
 
     if (this.x + this.w >= map.width || this.y + this.h >= map.height) {
       return false;
     }
 
-    for (i = 0; i < map.rooms.length; i++) {
-      var other = map.rooms[i];
-      if (this.overlap(other)) return false;
+    if (checkOverlap) {
+      for (i = 0; i < map.rooms.length; i++) {
+        var other = map.rooms[i];
+        if (this.overlap(other)) return false;
+      }
     }
 
     return true;
