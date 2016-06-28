@@ -619,9 +619,7 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
 
     action(this);
 
-    // Render the world.
     this.playerLook();
-    this.draw();
 
   };
   /// }}}
