@@ -612,6 +612,7 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
     // Note: key is not a typical key code; if shift was pressed, it has 256 added to it.
 
     // Handle the specific key
+    console.log(key);
 
     var action = this.getActionForKey(key);
 
