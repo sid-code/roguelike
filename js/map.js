@@ -66,7 +66,8 @@ define(["./rng"], function(rng) {
   DMap.FLOOR = 1;
   DMap.WALL = 2;
   DMap.TEMP = 3;
-  DMap.DOOR = 4;
+  DMap.TEMP2 = 4;
+  DMap.DOOR = 5;
 
   DMap.UNSEEN = 0;
   DMap.SEEN = 1;
@@ -151,10 +152,66 @@ define(["./rng"], function(rng) {
   DMap.prototype.generate = function() {
     this.fill();
     this.generateRooms(this.numRoomAttempts);
+    this.generateCaves(this.numCaves);
     this.generateMaze();
+    this.fixTemporaryWalls();
     this.connectComponents();
     this.addExtraConnectors();
     while (this.killDeadEnds());
+
+    this.killIslands(20);
+
+    this.fillBorder(false);
+  };
+
+  DMap.prototype.generateCavern = function(width, height) {
+    var grid = new Uint16Array(width * height);
+
+    var i;
+    for (i = 0; i < grid.length; i++) {
+      grid[i] = (this.rng.next() < 0.25) ? 0 : 1;
+    }
+
+    var birth = [];
+
+    if (this.caveSetting.length > 0) {
+      for (i = 0; i < this.caveSetting.length; i++) {
+        var value = this.caveSetting[i];
+        if (value >= 5 || value <= 8) {
+          birth.push(value);
+        }
+      }
+    } else {
+      // Random, each of {6, 7, 8} has a 0.5 chance of being in the setting.
+      // If it ends up being empty, then it'll just be set to [6, 7, 8]
+      for (i = 6; i <= 8; i++) {
+        var value = this.caveSetting[i];
+        if (this.rng.next() < 0.5) {
+          birth.push(value);
+        }
+      }
+
+      if (birth.length === 0) {
+        birth = [6, 7, 8];
+      }
+    }
+
+    console.log(birth);
+
+    for (i = 0; i < 5; i++) {
+      runCellularAutomataStep(grid, {
+        width: width,
+        height: height,
+        alive: 1,
+        dead: 0,
+        rule: {
+          birth: birth,
+          survive: [4,5,6,7,8]
+        }
+      });
+    }
+
+    return grid;
   };
 
   // Function to place rooms in the dungeon. The parameter signifies how many
@@ -171,7 +228,39 @@ define(["./rng"], function(rng) {
         room.drawOn(this);
       }
     }
+
   };
+
+  DMap.prototype.generateCaves = function(numCaves) {
+    var x, y, i;
+    for (i = 0; i < numCaves; i++) {
+      var cavernWidth = this.cavernWidth;
+      var cavernHeight = this.cavernHeight;
+      var cavern = this.generateCavern(cavernWidth, cavernHeight);
+      var offsetX = this.rng.nextInt(1, (this.width - cavernWidth)/2) * 2 + 1;
+      var offsetY = this.rng.nextInt(1, (this.height - cavernHeight)/2) * 2 + 1;
+      for (x = offsetX; x < offsetX + cavernWidth; x++) {
+        for (y = offsetY; y < offsetY + cavernHeight; y++) {
+          // NOTE: instead of using DMap.WALL, it uses DMap.TEMP2. This is to
+          // prevent the mazes from being drawn between the little cavey rooms.
+          // The TEMP2s are converted into WALLs later.
+          this.set(x, y, (get(cavern, cavernWidth, cavernHeight, x - offsetX, y - offsetY) == 1) ? DMap.TEMP : DMap.TEMP2);
+        }
+      }
+    }
+  };
+
+  // Removes the temporary walls that generateCaves makes
+  DMap.prototype.fixTemporaryWalls = function() {
+    var x,y;
+    for (x = 0; x < this.width; x++) {
+      for (y = 0; y < this.height; y++) {
+        if (this.get(x, y) == DMap.TEMP2) {
+          this.set(x, y, DMap.WALL);
+        }
+      }
+    }
+  }
 
   // Used for maze generation purposes to find out where to start generating the maze.
   DMap.prototype.getFirstBlank = function() {
@@ -349,27 +438,31 @@ define(["./rng"], function(rng) {
   };
 
   DMap.prototype.floodFill = function(x, y, newTile) {
+    return genericFloodFill(this.grid, this.width, this.height, x, y, newTile);
+  };
+
+  var genericFloodFill = function(grid, width, height, x, y, newValue) {
     var tilesChanged = 0;
 
-    var oldTile = this.get(x, y);
+    var oldValue = get(grid, width, height, x, y);
     var stack = [{x: x, y: y}];
     while (stack.length > 0) {
       var pos = stack.pop();
 
-      if (this.get(pos.x, pos.y) == oldTile) {
+      if (get(grid, width, height, pos.x, pos.y) == oldValue) {
         // This should only change when we *actually* change the color of the
         // tile.  The way this algorithm works, it might attempt to change some
         // tiles twice so we don't want those to be overcounted.
         tilesChanged++;
       }
 
-      this.set(pos.x, pos.y, newTile);
+      set(grid, width, height, pos.x, pos.y, newValue);
 
       var px = pos.x, py = pos.y;
-      if (this.get(px + 1, py) == oldTile) stack.push({x: px + 1, y: py});
-      if (this.get(px - 1, py) == oldTile) stack.push({x: px - 1, y: py});
-      if (this.get(px, py + 1) == oldTile) stack.push({x: px, y: py + 1});
-      if (this.get(px, py - 1) == oldTile) stack.push({x: px, y: py - 1});
+      if (get(grid, width, height, px + 1, py) == oldValue) stack.push({x: px + 1, y: py});
+      if (get(grid, width, height, px - 1, py) == oldValue) stack.push({x: px - 1, y: py});
+      if (get(grid, width, height, px, py + 1) == oldValue) stack.push({x: px, y: py + 1});
+      if (get(grid, width, height, px, py - 1) == oldValue) stack.push({x: px, y: py - 1});
     }
 
     return tilesChanged;
@@ -407,6 +500,27 @@ define(["./rng"], function(rng) {
   };
 
   DMap.prototype.countWallsAround = function(x, y) {
+  DMap.prototype.killIslands = function(maxSize) {
+    var x, y, islandSize;
+    for (x = 1; x < this.width - 1; x++) {
+      for (y = 1; y < this.height - 1; y++) {
+        if (this.get(x, y) == DMap.WALL) {
+          var islandSize = this.floodFill(x, y, DMap.TEMP);
+          if (islandSize < maxSize) {
+            this.floodFill(x, y, DMap.FLOOR);
+          }
+        }
+      }
+    }
+    for (x = 1; x < this.width - 1; x++) {
+      for (y = 1; y < this.height - 1; y++) {
+        if (this.get(x, y) == DMap.TEMP) {
+          this.set(x, y, DMap.WALL);
+        }
+      }
+    }
+  };
+
     var count = 0;
 
     if (this.get(x + 1, y) == DMap.WALL) count++;
@@ -497,6 +611,62 @@ define(["./rng"], function(rng) {
     h = map.rng.nextInt((map.minRoomSize-1) / 2, (map.maxRoomSize+1) / 2) * 2;
 
     return new DMap.Room(x, y, w, h);
+  };
+
+  // This function runs a 2d cellular automata step on grid (1-d array)
+  // options = {
+  //   width: int (required, width of the grid)
+  //   height: int (required, height of the grid)
+  //   rule: { (required, standard 2d cellular automata rule)
+  //     birth: [2,3] (example, how many alive neighbors a dead cell needs to be born)
+  //     survive: [3] (example, how many alive neighbors an alive cell needs to survive)
+  //   }
+  //   alive: which value signifies alive, default DMap.WALL
+  //   dead: which value signifies dead, default DMap.FLOOR
+  // }
+  var runCellularAutomataStep = function(grid, options) {
+    var width = options.width;
+    var height = options.height;
+    if (!width || !height) throw "cellular automata needs grid with width and height";
+
+    var rule = options.rule;
+    if (!rule) throw "no rule provided";
+
+    var alive = options.alive == null ? DMap.WALL : options.alive;
+    var dead = options.dead == null ? DMap.FLOOR : options.dead;
+
+    var gridCopy = grid.slice(0);
+
+    var x, y, x2, y2;
+
+    for (x = 0; x < width; x++) {
+      for (y = 0; y < height; y++) {
+        var aliveNeighborCount = 0;
+        for (x2 = x - 1; x2 <= x + 1; x2++) {
+          for (y2 = y - 1; y2 <= y + 1; y2++) if (!(x == x2 && y == y2)) {
+            if (get(grid, width, height, x2, y2, dead) == alive) {
+              aliveNeighborCount++;
+            }
+          }
+        }
+
+        if (get(grid, width, height, x, y, dead) == dead) {
+          if (rule.birth.indexOf(aliveNeighborCount) > -1) {
+            set(gridCopy, width, height, x, y, alive);
+          }
+        } else {
+          if (rule.survive.indexOf(aliveNeighborCount) == -1) {
+            set(gridCopy, width, height, x, y, dead);
+          }
+        }
+      }
+    }
+
+    // Replace the old grid with the new one.
+    var i;
+    for (i = 0; i < grid.length; i++) {
+      grid[i] = gridCopy[i];
+    }
   };
 
   return DMap;
