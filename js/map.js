@@ -497,7 +497,7 @@ define(["./rng"], function(rng) {
     var x, y;
     for (x = 1; x < this.width - 1; x++) {
       for (y = 1; y < this.height - 1; y++) {
-        if (DMap.isFloorTile(this.get(x, y)) && this.countWallsAround(x, y) == 3) {
+        if (DMap.isFloorTile(this.get(x, y)) && this.countTilesAround(x, y, DMap.WALL) == 3) {
           this.set(x, y, DMap.WALL);
           result = true;
         }
@@ -508,7 +508,6 @@ define(["./rng"], function(rng) {
 
   };
 
-  DMap.prototype.countWallsAround = function(x, y) {
   DMap.prototype.killIslands = function(maxSize) {
     var x, y, islandSize;
     for (x = 1; x < this.width - 1; x++) {
@@ -530,12 +529,13 @@ define(["./rng"], function(rng) {
     }
   };
 
+  DMap.prototype.countTilesAround = function(x, y, tile) {
     var count = 0;
 
-    if (this.get(x + 1, y) == DMap.WALL) count++;
-    if (this.get(x, y + 1) == DMap.WALL) count++;
-    if (this.get(x - 1, y) == DMap.WALL) count++;
-    if (this.get(x, y - 1) == DMap.WALL) count++;
+    if (this.get(x + 1, y) == tile) count++;
+    if (this.get(x, y + 1) == tile) count++;
+    if (this.get(x - 1, y) == tile) count++;
+    if (this.get(x, y - 1) == tile) count++;
 
     return count;
   };
