@@ -34,6 +34,15 @@ define([], function() {
     game.echo("There is " + this.getName(game.player) + " here.");
   };
 
+  var Artifact = function(options) {
+    Attraction.call(this, options);
+
+    this.weight = options.weight;
+  };
+
+  Artifact.prototype = Object.create(GenericItem.prototype);
+  Artifact.prototype.constructor = Artifact;
+
   var Attraction = function(options) {
     GenericItem.call(this, options);
   };
@@ -59,6 +68,7 @@ define([], function() {
 
   return {
     GenericItem: GenericItem,
+    Artifact: Artifact,
     Attraction: Attraction,
     Staircase: Staircase,
   };
