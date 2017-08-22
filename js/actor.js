@@ -91,6 +91,11 @@ define([], function() {
       level: 1
     }
   };
+
+  Monster.create = function(name) {
+    return new Monster(Monster.monsters[name])
+  };
+
   return {
     Actor: Actor,
     Player: Player,
