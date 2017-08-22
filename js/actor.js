@@ -35,7 +35,7 @@ define([], function() {
       wis: stats.wis,
       luck: stats.luck,
 
-      speed: stats.speed || 1,
+      speed: stats.speed || 0,
       regenRate: stats.regenRate || 1,
 
     };
