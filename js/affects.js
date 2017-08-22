@@ -103,6 +103,7 @@ define([], function() {
   Affect.affects = {
     strength: {
       name: "strength",
+      description: "small temporary boost to strength",
       duration: 200,
       activate: function(actor, repeat) {
         if (repeat) {
