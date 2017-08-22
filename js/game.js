@@ -220,9 +220,14 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
 
   // Shamelessly copied from
   // http://www.roguebasin.com/index.php?title=LOS_using_strict_definition
-  Game.prototype.castLine = function(map, x0, y0, x1, y1) {
+  Game.prototype.castLine = function(map, x0, y0, x1, y1, fn) {
     var sx, sy, xnext, ynext, dx, dy;
     var denom, dist;
+
+    if (typeof fn === "undefined") {
+      fn = this.see.bind(this);
+    }
+
     dx = x1 - x0;
     dy = y1 - y0;
     sx = x0 < x1 ? 1 : -1;
@@ -232,11 +237,11 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
 
     denom = Math.sqrt(dx * dx + dy * dy);
     while (xnext != x1 || ynext != y1) {
-      this.see(map, xnext, ynext);
+      fn(map, xnext, ynext);
 
       if (map.get(xnext, ynext) == DMap.WALL) {
         // It's a wall, so we're done.
-        return;
+        return false;
       }
 
       if (Math.abs(dy * (xnext - x0 + sx) - dx * (ynext - y0)) / denom < 0.5) {
@@ -249,7 +254,7 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
       }
     }
 
-
+    return true;
   };
 
   // This function updates what the player can see.
