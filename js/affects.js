@@ -87,7 +87,12 @@ define([], function() {
   // This is the function that should be used to add affects to actors.
   Affect.addAffect = function(actor, affectName) {
     var affectOptions = Affect.affects[affectName];
-    if (!affectOptions) return false;
+    if (!affectOptions) {
+      throw {
+        name: "InvalidAffectName",
+        message: "Invalid affect name: " + affectName
+      };
+    }
 
     var affect = new Affect(affectOption);
     affect.applyTo(actor);
