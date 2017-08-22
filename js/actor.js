@@ -79,6 +79,18 @@ define([], function() {
   Monster.prototype = Object.create(Actor.prototype);
   Monster.prototype.constructor = Monster;
 
+  Monster.monsters = {
+    rat: {
+      name: "rat",
+      stats: {
+        hp: 100,
+        str: 1, dex: 1, con: 1, intl: 1, wis: 1, luck: 1,
+        speed: 0,
+        regenRate: 1,
+      },
+      level: 1
+    }
+  };
   return {
     Actor: Actor,
     Player: Player,
