@@ -229,22 +229,41 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
 
   // Shamelessly copied from
   // http://www.roguebasin.com/index.php?title=LOS_using_strict_definition
-  Game.prototype.castLine = function(map, x0, y0, x1, y1, fn) {
-    var sx, sy, xnext, ynext, dx, dy;
+  //
+  // Casts a line from (x0, y0) to (x1, y1) stopping if there's a wall in the way.
+  // Returns true if (x1, y1) successfully reached, false if not.
+  // For each point seen, calls `fn`. If not provided, default of `this.see` is used.
+  // If `fn` is null, a dummy empty function is used.
+  Game.prototype.castLine = function(map, x0, y0, x1, y1, fn, maxLen) {
+    var sx, sy, xnext, ynext, dx, dy, sqsum;
     var denom, dist;
 
     if (typeof fn === "undefined") {
       fn = this.see.bind(this);
     }
 
+    if (fn === null) {
+      fn = function() {};
+    }
+
+    if (typeof maxLen === "undefined") {
+      maxLen = Infinity;
+    }
+
     dx = x1 - x0;
     dy = y1 - y0;
+    sqsum = dx * dx + dy * dy;
+
+    if (sqsum > maxLen * maxLen) {
+      return false;
+    }
+
     sx = x0 < x1 ? 1 : -1;
     sy = y0 < y1 ? 1 : -1;
     xnext = x0;
     ynext = y0;
 
-    denom = Math.sqrt(dx * dx + dy * dy);
+    denom = Math.sqrt(sqsum);
     while (xnext != x1 || ynext != y1) {
       fn(map, xnext, ynext);
 
