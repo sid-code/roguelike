@@ -329,6 +329,15 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
 
   };
 
+  Game.prototype.actorCanSee = function(actor, otherActor) {
+    if (actor.pos.level != otherActor.pos.level) return false;
+
+    var map = this.dungeon.getLevel(this.player.pos.level).map;
+    var result = this.castLine(map, actor.pos.x, actor.pos.y, otherActor.pos.x, otherActor.pos.y, null, actor.stats.lightRadius);
+
+    return result;
+  };
+
   // This function gets all the monsters/items at x, y of a level
   Game.prototype.getObjectsAt = function(level, x, y) {
     // Note: under normal circumstances, this function should only ever return
