@@ -32,8 +32,8 @@ define(["./game", "./actor"], function(Game, Actor) {
       height: 71,
 
       // Room size control
-      minRoomSize: 7,
-      maxRoomSize: 19,
+      minRoomSize: 5,
+      maxRoomSize: 11,
 
       // Allow the rooms to overlap? (Allows dungeon to have tons of rooms)
       // Turn off for a more maze-like dungeon.
@@ -48,11 +48,13 @@ define(["./game", "./actor"], function(Game, Actor) {
       // Vague constraints on cave dimensions. This does not guarantee caves of
       // size 24x24 but generally the bigger these get, the fatter or taller
       // caves get.
-      caveWidth: 24,
-      caveHeight: 24,
+      caveWidth: 20,
+      caveHeight: 20,
 
       // How many caves should be placed on the map?
-      numCaves: 20,
+      numCaves: 30,
+
+      caveSetting: [6,7,8],
 
       // How fat should the connectors be? 1 = single square, 2 = 3x3, 3 = 5x5,
       // etc. (A connector is a block of floor tiles randomly placed to connect
