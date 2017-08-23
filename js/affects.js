@@ -38,7 +38,7 @@ define([], function() {
    * str, and affect B runs out, leaving him with 16 str, erroneously gaining a
    * point of str in the process. You cannot mix multiplication and addition
    * unless you can 100% guarantee that the options will expire like a stack:
-   * gain A, gain B, lose B, lose A which is not how roguelike affects work.
+   * gain A, gain B, lose B, lose A (this guarantee is unlikely).
    */
   var Affect = function(game, options) {
     this.name = options.name;
