@@ -2,7 +2,7 @@
  * This code describes a player.
  */
 
-define([], function() {
+define(["./util"], function(Util) {
   /*
    * TODO: explain all of these
    *
