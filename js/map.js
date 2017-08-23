@@ -164,9 +164,11 @@ define(["./rng"], function(rng) {
     this.fixTemporaryWalls();
     this.connectComponents();
     this.addExtraConnectors();
+
+
     while (this.killDeadEnds());
 
-    this.killIslands(20);
+    this.killIslands(15);
 
     this.fillBorder(false);
   };
@@ -176,7 +178,7 @@ define(["./rng"], function(rng) {
 
     var i;
     for (i = 0; i < grid.length; i++) {
-      grid[i] = (this.rng.next() < 0.25) ? 0 : 1;
+      grid[i] = (this.rng.next() < 0.35) ? 0 : 1;
     }
 
     var birth = [];
