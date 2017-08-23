@@ -354,7 +354,7 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
     }
 
     for (i = 0; i < level.monsters.length; i++) {
-      monster = level.monster[i];
+      monster = level.monsters[i];
       if (monster.pos.x == x && monster.pos.y == y) {
         result.monsters.push(monster);
       }
