@@ -42,7 +42,7 @@ define([], function() {
   };
 
   Dungeon.prototype.removeItem = function(item) {
-    var level = this.getLevel(item.level);
+    var level = this.getLevel(item.pos.level);
     var index = level.items.indexOf(item);
     if (index > -1) {
       level.items.splice(index, 1);
