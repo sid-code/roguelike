@@ -143,30 +143,39 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
     var randomPos;
     var exclude = [];
 
+    this.dungeon.addLevel(index, map);
+
     if (!upStaircasePos) {
       randomPos = map.getRandomFloorTile();
       exclude.push(randomPos);
-      if (randomPos1.x == -1) {
+      if (randomPos.x == -1) {
         throw "could not place up staircase because there were no floor tiles on level " + index;
       }
 
-      upStaircasePos = {x: randomPos.x, y: randomPos.y};
+      upStaircasePos = randomPos;
     }
 
     if (!downStaircasePos) {
       randomPos = map.getRandomFloorTile(exclude);
+      exclude.push(randomPos);
       if (randomPos.x == -1) {
         throw "could not place down staircase because there were no floor tiles on level " + index;
       }
 
-      downStaircasePos = {x: randomPos.x, y: randomPos.y};
+      downStaircasePos = randomPos;
     }
 
-    this.dungeon.addLevel(index, map);
     var upsc = new Item.Staircase({up: true});
     this.dungeon.placeItem(index, upStaircasePos.x, upStaircasePos.y, upsc);
     var downsc = new Item.Staircase({up: false});
     this.dungeon.placeItem(index, downStaircasePos.x, downStaircasePos.y, downsc);
+
+
+    // Now place some monsters
+    randomPos = map.getRandomFloorTile(exclude);
+    console.log(randomPos);
+    var monster = Actor.Monster.create("rat");
+    this.dungeon.placeMonster(index, randomPos.x, randomPos.y, monster);
 
 
   };
