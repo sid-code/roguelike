@@ -375,6 +375,13 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
     this.ticks++;
 
     // Tick monsters
+    var index = this.player.pos.level;
+    var level = this.dungeon.getLevel(index);
+    var monsters = level.monsters, monster;
+    var i;
+    for (i = 0; i < monsters.length; i++) {
+      monsters[i].tick(this);
+    }
 
     // Heal player/monsters
 
@@ -383,7 +390,7 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
     // Note: backwards iteration allows us to delete elements without screwing
     // up the loop index.
 
-    var i, timer;
+    var timer;
     for (i = this.timers.length - 1; i >= 0; i--) {
       this.timers[i].ticksLeft--;
       if (this.timers[i].ticksLeft === 0) {
