@@ -408,48 +408,67 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
   };
   /// }}}
 
-  /// Player movement {{{
+  /// Actor movement {{{
 
   // The return value of this function is meaningful if the player used the
   // move-until-wall shortcuts. It will return true if the player should keep
   // moving and false if the player should stop; if there's a wall or a new
   // monster comes into view.
-  Game.prototype.tryPlayerMove = function(dx, dy) {
-    var player = this.player;
-    var playerPos = player.pos;
-    var level = this.dungeon.getLevel(playerPos.level);
+  Game.prototype.tryActorMove = function(actor, dx, dy) {
+    var pos = actor.pos;
+    var level = this.dungeon.getLevel(pos.level);
+    if (!level) {
+      throw {
+        name: "InvalidMove",
+        message: "Attempt to move actor on invalid dungeon level"
+      };
+    }
+
     var map = level.map;
+    var newX = pos.x + dx;
+    var newY = pos.y + dy;
 
-    var newx = playerPos.x + dx;
-    var newy = playerPos.y + dy;
-
-    // Check if the tile is a floor tile
-    var newTile = map.get(newx, newy);
-
+    var newTile = map.get(newX, newY);
     if (!DMap.isFloorTile(newTile)) {
       return false;
     }
 
+    var ppos = this.player.pos;
+
     // Check if there is a monster on that tile. If so, try to attack it.
-    var objects = this.getObjectsAt(level, newx, newy);
+    var objects = this.getObjectsAt(level, newX, newY);
+
     if (objects.monsters.length > 0) {
       // TODO: attack the monster
 
-      this.tick();
       return false;
 
+    } else if (ppos.x == newX && ppos.y == newY && ppos.level == level) {
+      // TODO: attack the player 
     } else {
-      player.move(dx, dy);
+      actor.move(dx, dy);
 
-      // Call the announce function of each item on the new tile.
-      var i;
-      for (i = 0; i < objects.items.length; i++) {
-        objects.items[i].announce(this);
+      if (actor === this.player) {
+        // Call the announce function of each item on the new tile.
+        var i;
+        for (i = 0; i < objects.items.length; i++) {
+          objects.items[i].announce(this);
+        }
+
+
+        // If any monsters on this level can see us, return false to signal
+        // that the run should be stopped
+        for (i = 0; i < level.monsters.length; i++) {
+          if (this.actorCanSee(this.player, level.monsters[i])) {
+            console.log("CAN SEE RAT");
+            return false;
+          }
+        }
       }
-
-      this.tick();
       return true;
     }
+
+
   };
 
   // This function tries to use a staircase. If "up" is true, then it'll try to
@@ -637,16 +656,20 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
   };
 
   Game.primaryKeybinds[Game.keys.RIGHT] = function(game) {
-    game.tryPlayerMove(1, 0);
+    game.tryActorMove(game.player, 1, 0);
+    game.tick();
   };
   Game.primaryKeybinds[Game.keys.LEFT] = function(game) {
-    game.tryPlayerMove(-1, 0);
+    game.tryActorMove(game.player, -1, 0);
+    game.tick();
   };
   Game.primaryKeybinds[Game.keys.UP] = function(game) {
-    game.tryPlayerMove(0, -1);
+    game.tryActorMove(game.player, 0, -1);
+    game.tick();
   };
   Game.primaryKeybinds[Game.keys.DOWN] = function(game) {
-    game.tryPlayerMove(0, 1);
+    game.tryActorMove(game.player, 0, 1);
+    game.tick();
   };
 
   Game.primaryKeybinds[Game.keys.LESSTHAN] = function(game) {
