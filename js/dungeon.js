@@ -33,6 +33,14 @@ define([], function() {
     level.items.push(item);
   };
 
+  Dungeon.prototype.placeMonster = function(index, x, y, monster) {
+    var level = this.getLevel(index);
+    monster.pos.level = index;
+    monster.pos.x = x;
+    monster.pos.y = y;
+    level.monsters.push(monster);
+  };
+
   Dungeon.prototype.removeItem = function(item) {
     var level = this.getLevel(item.level);
     var index = level.items.indexOf(item);
