@@ -370,84 +370,6 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
   };
   /// }}}
 
-  /// Rendering {{{
-  Game.prototype.draw = function() {
-    var height = this.canvas.height;
-    var width = this.canvas.width;
-    var ctx = this.canvas.getContext("2d");
-
-    var tileSize = this.config.tileSize;
-    var horizontalTiles = Math.floor(width / tileSize);
-    var verticalTiles = Math.floor(height / tileSize);
-
-    var playerPos = this.player.pos;
-    var playerLevel = this.dungeon.getLevel(playerPos.level);
-
-    var map = playerLevel.map;
-
-    var mapWidth = map.width;
-    var mapHeight = map.height;
-
-    var x, y, tileX, tileY;
-
-    // the >> 0 is a faster way to get the integer part of the number
-    for (x = 0, tileX = playerPos.x - (horizontalTiles / 2 >> 0); x < horizontalTiles; x++, tileX++) {
-      for (y = 0, tileY = playerPos.y - (verticalTiles / 2 >> 0); y < verticalTiles; y++, tileY++) {
-        // Note: The following is temporary code that I'm using for now.
-        var tile = map.get(tileX, tileY);
-        var seen = map.getSeen(tileX, tileY) != DMap.UNSEEN;
-        var currentlySeen = this.canCurrentlySee(tileX, tileY);
-
-        if (seen) {
-          switch (tile) {
-            case DMap.NOTHING:
-              ctx.fillStyle = "black"; break;
-            case DMap.WALL:
-              ctx.fillStyle = "brown"; break;
-            case DMap.FLOOR:
-              ctx.fillStyle = "lightgrey"; break;
-          }
-
-          // Check if this tile has any items/monsters to render.
-          var objects = this.getObjectsAt(playerLevel, tileX, tileY);
-
-          if (objects.items.length > 0) {
-            ctx.fillStyle = "darkgreen";
-          }
-          if (objects.monsters.length > 0) {
-            ctx.fillStyle = "darkred";
-          }
-
-          ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-
-        } else {
-          // Unseen tiles are black
-          ctx.fillStyle = "black";
-          ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-        }
-
-
-        // Mark the player's tile red
-        if (tileX == playerPos.x && tileY == playerPos.y) {
-          ctx.fillStyle = "red";
-          ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-        }
-
-        // If the tile has been seen but is not currently visible, then darken
-        // it.
-        if (!currentlySeen) {
-          ctx.fillStyle = "black";
-          ctx.globalAlpha = 0.2;
-          ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-          ctx.globalAlpha = 1;
-        }
-      }
-    }
-
-  };
-
-  /// }}}
-
   /// Game "tick" {{{
   Game.prototype.tick = function() {
     this.ticks++;
@@ -567,6 +489,85 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
   /// }}}
 
   /// Player I/O {{{
+
+  /// Rendering {{{
+  Game.prototype.draw = function() {
+    var height = this.canvas.height;
+    var width = this.canvas.width;
+    var ctx = this.canvas.getContext("2d");
+
+    var tileSize = this.config.tileSize;
+    var horizontalTiles = Math.floor(width / tileSize);
+    var verticalTiles = Math.floor(height / tileSize);
+
+    var playerPos = this.player.pos;
+    var playerLevel = this.dungeon.getLevel(playerPos.level);
+
+    var map = playerLevel.map;
+
+    var mapWidth = map.width;
+    var mapHeight = map.height;
+
+    var x, y, tileX, tileY;
+
+    // the >> 0 is a faster way to get the integer part of the number
+    for (x = 0, tileX = playerPos.x - (horizontalTiles / 2 >> 0); x < horizontalTiles; x++, tileX++) {
+      for (y = 0, tileY = playerPos.y - (verticalTiles / 2 >> 0); y < verticalTiles; y++, tileY++) {
+        // Note: The following is temporary code that I'm using for now.
+        var tile = map.get(tileX, tileY);
+        var seen = map.getSeen(tileX, tileY) != DMap.UNSEEN;
+        var currentlySeen = this.canCurrentlySee(tileX, tileY);
+
+        if (seen) {
+          switch (tile) {
+            case DMap.NOTHING:
+              ctx.fillStyle = "black"; break;
+            case DMap.WALL:
+              ctx.fillStyle = "brown"; break;
+            case DMap.FLOOR:
+              ctx.fillStyle = "lightgrey"; break;
+          }
+
+          // Check if this tile has any items/monsters to render.
+          var objects = this.getObjectsAt(playerLevel, tileX, tileY);
+
+          if (objects.items.length > 0) {
+            ctx.fillStyle = "darkgreen";
+          }
+          if (objects.monsters.length > 0) {
+            ctx.fillStyle = "darkred";
+          }
+
+          ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+
+        } else {
+          // Unseen tiles are black
+          ctx.fillStyle = "black";
+          ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+        }
+
+
+        // Mark the player's tile red
+        if (tileX == playerPos.x && tileY == playerPos.y) {
+          ctx.fillStyle = "red";
+          ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+        }
+
+        // If the tile has been seen but is not currently visible, then darken
+        // it.
+        if (!currentlySeen) {
+          ctx.fillStyle = "black";
+          ctx.globalAlpha = 0.2;
+          ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+          ctx.globalAlpha = 1;
+        }
+      }
+    }
+
+  };
+
+  /// }}}
+
   /// Output {{{
   Game.prototype.echo = function(msg, color) {
     this.output(msg, color);
