@@ -17,6 +17,8 @@ define([], function() {
    *   },
    *
    *   level: level of actor,
+   *
+   *   tick: a function to be exeuted on each game tick,
    * }
    */
   var Actor = function(options) {
@@ -42,6 +44,8 @@ define([], function() {
       regenRate: stats.regenRate || 1,
 
     };
+
+    this.tick = (options.tick || function() {}).bind(this);
 
     this.affects = [],
 
@@ -81,6 +85,17 @@ define([], function() {
   Monster.prototype = Object.create(Actor.prototype);
   Monster.prototype.constructor = Monster;
 
+  var simpleTickAction = function(game) {
+    var player = game.player;
+    if (game.actorCanSee(this, player)) {
+      var dx = Util.sign(player.pos.x - this.pos.x);
+      var dy = Util.sign(player.pos.y - this.pos.y);
+
+      game.tryActorMove(this, dx, dy);
+    }
+
+  };
+
   Monster.monsters = {
     rat: {
       name: "rat",
@@ -91,7 +106,8 @@ define([], function() {
         speed: 0,
         regenRate: 1,
       },
-      level: 1
+      level: 1,
+      tick: simpleTickAction,
     }
   };
 
