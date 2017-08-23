@@ -13,6 +13,7 @@ define([], function() {
    *     str/dex/con/intl/wis/luck: corresponding stat of actor
    *     speed: speed of actor
    *     regenRate: regeneration rate of actor
+   *     lightRadius: distance this actor can see
    *   },
    *
    *   level: level of actor,
@@ -34,6 +35,8 @@ define([], function() {
       intl: stats.intl,
       wis: stats.wis,
       luck: stats.luck,
+
+      lightRadius: stats.lightRadius || 30,
 
       speed: stats.speed || 0,
       regenRate: stats.regenRate || 1,
@@ -61,12 +64,11 @@ define([], function() {
   /*
    * Extra options on top of Actor's:
    *
-   * lightRadius: how far the player can see
+   * (none yet)
    *
    */
   var Player = function(options) {
     Actor.call(this, options);
-    this.stats.lightRadius = options.stats.lightRadius || 30;
   };
 
   Player.prototype = Object.create(Actor.prototype);
@@ -85,6 +87,7 @@ define([], function() {
       stats: {
         hp: 100,
         str: 1, dex: 1, con: 1, intl: 1, wis: 1, luck: 1,
+        lightRadius: 10,
         speed: 0,
         regenRate: 1,
       },
