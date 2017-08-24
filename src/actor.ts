@@ -2,8 +2,7 @@
  * This code describes an actor.
  */
 
-import { Position, SimpleOutfit } from "./interfaces";
-import { Affect } from "./affects";
+import { SimpleOutfit } from "./interfaces";
 import { Game } from "./game";
 import * as Util from "./util";
 
