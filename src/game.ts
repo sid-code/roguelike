@@ -13,12 +13,12 @@ export interface SeeFunc {
   (map: DMap, x: number, y: number);
 }
 
-interface KeyFunc {
+export interface KeyFunc {
   (game: Game);
 }
 
 // Just a list of keybinds
-interface KeyEnv {
+export interface KeyEnv {
   [code: number]: KeyFunc;
 }
 
