@@ -1,5 +1,5 @@
 import { Game } from "./game";
-import { Actor, Player } from "./actor";
+import { Player } from "./actor";
 
 // HTMLCanvasElement doesn't work, so I have to use any...
 var canvas: any = document.getElementById("viewport");

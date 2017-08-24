@@ -3,7 +3,7 @@ import { DMap, Tile, TileStatus } from "./map";
 import { Dungeon, DungeonLevel } from "./dungeon";
 import { PSprng as rng } from "./rng";
 import { Actor, Player, Monster } from "./actor";
-import { GenericItem, Staircase } from "./item";
+import { Staircase } from "./item";
 import { ObjectList, Timer, TimerCallback, OutputFunc } from "./interfaces";
 import { FOV } from "./fov";
 
