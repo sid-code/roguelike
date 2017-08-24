@@ -375,7 +375,6 @@ export class DMap {
   // attempts should be made.
   generateRooms(numTries: number) {
     this.rooms = [];
-    var _this = this;
 
     var i, room;
 

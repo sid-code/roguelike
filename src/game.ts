@@ -107,9 +107,6 @@ export class Game {
 
     this.output = options.output;
 
-    var homeLevel = options.homeLevel || {};
-    var dungeon = options.dungeon || {};
-
     this.config = options;
 
     this.ticks = 0;
@@ -150,7 +147,6 @@ export class Game {
   // This will initialize the dungeon.
   initializeDungeon() {
     this.initializeHomeLevel();
-    var i;
 
     this.placeStaircase(0);
 
@@ -404,7 +400,7 @@ export class Game {
     // Tick monsters
     var index = this.player.getPos().level;
     var level = this.dungeon.getLevel(index);
-    var monsters = level.monsters, monster;
+    var monsters = level.monsters;
     var i;
     for (i = 0; i < monsters.length; i++) {
       monsters[i].tick(this);
@@ -559,9 +555,6 @@ export class Game {
     var playerLevel = this.dungeon.getLevel(playerPos.level);
 
     var map = playerLevel.map;
-
-    var mapWidth = map.width;
-    var mapHeight = map.height;
 
     var x, y, tileX, tileY;
 
