@@ -8,40 +8,55 @@
  *
  */
 
-define([], function() {
-  var Dungeon = function() {
+import { GenericItem } from "./item";
+import { Monster } from "./actor";
+import { DMap } from "./map";
+
+
+export interface DungeonLevel {
+  items: Array<GenericItem>;
+  monsters: Array<Monster>;
+  map: DMap;
+}
+
+export class Dungeon {
+  levels: { [index: number]: DungeonLevel }
+
+  constructor() {
     this.levels = {};
-  };
+  }
 
 
-  Dungeon.prototype.getLevel = function(index) {
+  getLevel(index: number): DungeonLevel {
     return this.levels[index];
-  };
-  Dungeon.prototype.addLevel = function(index, map) {
+  }
+
+  addLevel(index: number, map: DMap) {
     this.levels[index] = {
       items: [],
       monsters: [],
       map: map
     };
-  };
+  }
 
-  Dungeon.prototype.placeItem = function(index, x, y, item) {
+
+  placeItem(index: number, x: number, y: number, item: GenericItem) {
     var level = this.getLevel(index);
     item.pos.level = index;
     item.pos.x = x;
     item.pos.y = y;
     level.items.push(item);
-  };
+  }
 
-  Dungeon.prototype.placeMonster = function(index, x, y, monster) {
+  placeMonster(index: number, x: number, y: number, monster: Monster) {
     var level = this.getLevel(index);
     monster.pos.level = index;
     monster.pos.x = x;
     monster.pos.y = y;
     level.monsters.push(monster);
-  };
+  }
 
-  Dungeon.prototype.removeItem = function(item) {
+  removeItem(item: GenericItem) {
     var level = this.getLevel(item.pos.level);
     var index = level.items.indexOf(item);
     if (index > -1) {
@@ -52,8 +67,5 @@ define([], function() {
     }
 
     return item;
-  };
-
-
-  return Dungeon;
-});
+  }
+}

@@ -4,13 +4,198 @@
  * The "generate" function generates a rooms-and-corridors map for
  */
 
-define(["./rng"], function(rng) {
+import { PSprng as rng } from "./rng";
+import { DungeonOptions } from "./game";
+import { CoordPair } from "./interfaces";
+
+export enum Direction {
+  NORTH, EAST, SOUTH, WEST
+}
+
+var dirs = [
+  Direction.NORTH,
+  Direction.EAST,
+  Direction.SOUTH,
+  Direction.WEST
+];
+
+
+interface Delta extends CoordPair {
+  x: number;
+  y: number;
+}
+interface DirMap {
+  [dir: number]: Delta;
+}
+
+var deltas: DirMap = {};
+deltas[Direction.NORTH] = {x: 0, y: -1};
+deltas[Direction.EAST] = {x: 1, y: 0};
+deltas[Direction.SOUTH] = {x: 0, y: 1};
+deltas[Direction.WEST] = {x: -1, y: 0};
+
+export enum Tile {
+  NOTHING=4, FLOOR, WALL, TEMP, TEMP2, DOOR
+}
+
+export enum TileStatus {
+  UNSEEN, SEEN, MAPPED
+}
+
+interface CellularAutomataOptions<T> {
+  width: number; // width of grid
+  height: number; // height
+  rule: {
+    birth: Array<number>; // standard 2d cell automata rules
+    survive: Array<number>;
+  }
+  alive: T; // which value signifies alive?
+  dead: T; // which value signifies dead?
+}
+
+
+interface Grid<T> {
+  length: number;
+  [n: number]: T;
+  slice: (n: number) => Grid<T>;
+}
+
+
+// Helper functions to treat 1-d array as 2-d
+// If x, y is out of bounds, return defaultValue
+function get<T>(array: Grid<T>, width: number, height: number,
+                x: number, y: number, defaultValue: T = null): T {
+
+  if (x >= width || x < 0 || y >= height || y < 0) return defaultValue;
+  return array[width * y + x];
+
+};
+
+function set<T>(array: Grid<T>, width: number, height: number,
+                x: number, y: number, newValue: T) {
+
+  if (x >= width || x < 0 || y >= height || y < 0) return;
+  array[width * y + x] = newValue;
+
+};
+
+
+
+/*
+ * Class for representing rooms in the dungeon
+ */
+class Room {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+
+  constructor(x: number, y: number, w: number, h: number) {
+    this.x = x;
+    this.y = y;
+    this.w = w;
+    this.h = h;
+  };
+
+  overlap(other: Room): boolean {
+    if (this.x + this.w <= other.x || other.x + other.w <= this.x) {
+      return false;
+    }
+
+    if (this.y >= other.y + other.h || other.y >= this.y + this.h) {
+      return false;
+    }
+
+    return true;
+  }
+
+  // Checks if the room can be drawn on the map. If checkOverlap is true
+  // (default value if not provided), then it will be checked to see if it
+  // doesn't overlap other rooms.
+  checkOnMap(map: DMap, checkOverlap: boolean = true): boolean {
+    var i;
+
+    if (this.x + this.w >= map.width || this.y + this.h >= map.height) {
+      return false;
+    }
+
+    if (checkOverlap) {
+      for (i = 0; i < map.rooms.length; i++) {
+        var other = map.rooms[i];
+        if (this.overlap(other)) return false;
+      }
+    }
+
+    return true;
+  }
+
+  // draws a room at its position
+  drawOn(map: DMap) {
+    var px = this.x, py = this.y,
+        w = this.w, h = this.h;
+    var x, y;
+    for (x = px; x <= px + w; x++) {
+      for (y = py; y <= py + h; y++) {
+        if (x == px || y == py || x == px + w || y == py + h) {
+          map.set(x, y, Tile.WALL);
+        } else {
+          map.set(x, y, Tile.TEMP);
+        }
+      }
+    }
+
+    map.rooms.push(this);
+
+  };
+
+  static genRandomRoom(map: DMap): Room {
+    var x, y, w, h; // all of these must be odd;
+
+    x = map.rng.nextInt(0, (map.width-1) / 2) * 2;
+    y = map.rng.nextInt(0, (map.height-1) / 2) * 2;
+    w = map.rng.nextInt((map.minRoomSize-1) / 2, (map.maxRoomSize+1) / 2) * 2;
+    h = map.rng.nextInt((map.minRoomSize-1) / 2, (map.maxRoomSize+1) / 2) * 2;
+
+    return new Room(x, y, w, h);
+  }
+}
+
+interface DMapOptions extends DungeonOptions {
+  rng: rng;
+}
+
+export class DMap {
   /*
    * Constructor
-   *
-   * TODO: document options
    */
-  var DMap = function(options) {
+
+  options: DMapOptions;
+  rng: rng;
+
+  width: number;
+  height: number;
+
+  minRoomSize: number;
+  maxRoomSize: number;
+  allowRoomOverlap: boolean;
+
+  numRoomAttempts: number;
+
+  cavernWidth: number;
+  cavernHeight: number;
+  numCaves: number;
+  caveSetting: Array<number>;
+
+  numExtraConnectors: number;
+  connectorThickness: number;
+  straightTendency: number;
+
+  grid: Uint16Array;
+  seenGrid: Uint8Array;
+
+  rooms: Array<Room>;
+  
+  constructor(options: DMapOptions) {
     this.options = options;
     this.rng = options.rng;
 
@@ -25,12 +210,12 @@ define(["./rng"], function(rng) {
 
     this.minRoomSize = options.minRoomSize || 5;
     this.maxRoomSize = options.maxRoomSize || 11;
-    this.allowRoomOverlap = !!options.allowRoomOverlap;
+    this.allowRoomOverlap = options.allowRoomOverlap;
 
     this.numRoomAttempts = options.numRoomAttempts || 100;
 
-    this.cavernWidth = options.cavernWidth || 24;
-    this.cavernHeight = options.cavernHeight || 10;
+    this.cavernWidth = options.caveWidth || 24;
+    this.cavernHeight = options.caveHeight || 10;
     this.numCaves = options.numCaves || 20;
     this.caveSetting = options.caveSetting || [];
 
@@ -56,51 +241,20 @@ define(["./rng"], function(rng) {
     // What the player has seen (1=seen, 0=unseen, maybe more for unseen but
     // magically mapped)
     this.seenGrid = new Uint8Array(this.width * this.height);
-  };
+  }
 
 
-  /*
-   * Constants
-   */
-  DMap.NORTH = 0;
-  DMap.EAST = 1;
-  DMap.SOUTH = 2;
-  DMap.WEST = 3;
-  DMap.dirs = [DMap.NORTH, DMap.EAST, DMap.SOUTH, DMap.WEST];
-  DMap.deltas = [{x: 0, y: -1}, {x: 1, y: 0}, {x: 0, y: 1}, {x: -1, y: 0}];
 
-  DMap.NOTHING = 0;
-  DMap.FLOOR = 1;
-  DMap.WALL = 2;
-  DMap.TEMP = 3;
-  DMap.TEMP2 = 4;
-  DMap.DOOR = 5;
 
-  DMap.UNSEEN = 0;
-  DMap.SEEN = 1;
-  DMap.MAPPED = 2;
-
-  DMap.limits = {
+  static limits = {
     width: {min: 15, max: 1999},
     height: {min: 15, max: 1999},
   };
 
   // Helper function to determine whether a given tile is a floor tile (e.g.
   // can be walked on.)
-  DMap.isFloorTile = function(tile) {
-    return tile == DMap.FLOOR;
-  };
-
-  // Helper functions to treat 1-d array as 2-d
-  // If x, y is out of bounds, return defaultValue
-  var get = function(array, width, height, x, y, defaultValue) {
-    if (x >= width || x < 0 || y >= height || y < 0) return defaultValue;
-    return array[width * y + x];
-  };
-
-  var set = function(array, width, height, x, y, newValue) {
-    if (x >= width || x < 0 || y >= height || y < 0) return;
-    array[width * y + x] = newValue;
+  static isFloorTile(tile: Tile): boolean {
+    return tile == Tile.FLOOR;
   };
 
   /*
@@ -108,47 +262,43 @@ define(["./rng"], function(rng) {
    */
 
   // get and set for normal grid
-  DMap.prototype.get = function(x, y) {
-    return get(this.grid, this.width, this.height, x, y, DMap.NOTHING);
-  };
+  get(x: number, y: number): Tile {
+    return get(this.grid, this.width, this.height, x, y, Tile.NOTHING);
+  }
 
-  DMap.prototype.set = function(x, y, val) {
+  set(x: number, y: number, val: Tile) {
     set(this.grid, this.width, this.height, x, y, val);
-  };
+  }
 
   // get and set for the seen grid
-  DMap.prototype.getSeen = function(x, y) {
-    return get(this.seenGrid, this.width, this.height, x, y, DMap.UNSEEN);
-  };
+  getSeen(x: number, y: number): TileStatus {
+    return get(this.seenGrid, this.width, this.height, x, y, TileStatus.UNSEEN);
+  }
 
-  DMap.prototype.setSeen = function(x, y, val) {
+  setSeen(x: number, y: number, val: TileStatus) {
     set(this.seenGrid, this.width, this.height, x, y, val);
-  };
+  }
 
-  DMap.prototype.fill = function() {
+  fill() {
     var x, y;
     for (x = 0; x < this.width; x++) {
       for (y = 0; y < this.height; y++) {
-        this.set(x, y, DMap.WALL);
+        this.set(x, y, Tile.WALL);
       }
     }
   };
 
   // fills the map with a border of a wall. If fillFloor is true (which is the
   // default value), then the floor will be filled too.
-  DMap.prototype.fillBorder = function(fillFloor) {
-    if (fillFloor == null) {
-      fillFloor = true;
-    }
-
+  fillBorder(fillFloor: boolean = true) {
     var x, y;
     for (x = 0; x < this.width; x++) {
       for (y = 0; y < this.height; y++) {
         if (x === 0 || y === 0 || x == this.width - 1 || y == this.height - 1) {
-          this.set(x, y, DMap.WALL);
+          this.set(x, y, Tile.WALL);
         } else {
           if (fillFloor) {
-            this.set(x, y, DMap.FLOOR);
+            this.set(x, y, Tile.FLOOR);
           }
         }
       }
@@ -156,7 +306,7 @@ define(["./rng"], function(rng) {
   };
 
 
-  DMap.prototype.generate = function() {
+  generate() {
     this.fill();
     this.generateRooms(this.numRoomAttempts);
     this.generateCaves(this.numCaves);
@@ -173,12 +323,12 @@ define(["./rng"], function(rng) {
     this.fillBorder(false);
   };
 
-  DMap.prototype.generateCavern = function(width, height) {
-    var grid = new Uint16Array(width * height);
+  generateCavern(width: number, height: number): Uint16Array {
+    var cavern = new Uint16Array(width * height);
 
     var i;
-    for (i = 0; i < grid.length; i++) {
-      grid[i] = (this.rng.next() < 0.35) ? 0 : 1;
+    for (i = 0; i < cavern.length; i++) {
+      cavern[i] = (this.rng.next() < 0.35) ? 0 : 1;
     }
 
     var birth = [];
@@ -206,7 +356,7 @@ define(["./rng"], function(rng) {
     }
 
     for (i = 0; i < 5; i++) {
-      runCellularAutomataStep(grid, {
+      this.runCellularAutomataStep(cavern, {
         width: width,
         height: height,
         alive: 1,
@@ -218,19 +368,19 @@ define(["./rng"], function(rng) {
       });
     }
 
-    return grid;
+    return cavern;
   };
 
   // Function to place rooms in the dungeon. The parameter signifies how many
   // attempts should be made.
-  DMap.prototype.generateRooms = function(numTries) {
+  generateRooms(numTries: number) {
     this.rooms = [];
     var _this = this;
 
     var i, room;
 
     for (i = 0; i < numTries; i++) {
-      room = DMap.Room.genRandomRoom(this);
+      room = Room.genRandomRoom(this);
 
       if (room.checkOnMap(this, this.allowRoomOverlap)) {
         room.drawOn(this);
@@ -239,7 +389,7 @@ define(["./rng"], function(rng) {
 
   };
 
-  DMap.prototype.generateCaves = function(numCaves) {
+  generateCaves(numCaves: number) {
     var x, y, i;
     for (i = 0; i < numCaves; i++) {
       var cavernWidth = this.cavernWidth;
@@ -249,38 +399,39 @@ define(["./rng"], function(rng) {
       var offsetY = this.rng.nextInt(1, (this.height - cavernHeight)/2) * 2 + 1;
       for (x = offsetX; x < offsetX + cavernWidth; x++) {
         for (y = offsetY; y < offsetY + cavernHeight; y++) {
-          // NOTE: instead of using DMap.WALL, it uses DMap.TEMP2. This is to
+          // NOTE: instead of using Tile.WALL, it uses DMap.TEMP2. This is to
           // prevent the mazes from being drawn between the little cavey rooms.
           // The TEMP2s are converted into WALLs later.
-          this.set(x, y, (get(cavern, cavernWidth, cavernHeight, x - offsetX, y - offsetY) == 1) ? DMap.TEMP : DMap.TEMP2);
+          this.set(x, y, (get(cavern, cavernWidth, cavernHeight, x - offsetX, y - offsetY) == 1) ? Tile.TEMP : Tile.TEMP2);
         }
       }
     }
   };
 
   // Removes the temporary walls that generateCaves makes
-  DMap.prototype.fixTemporaryWalls = function() {
+  fixTemporaryWalls() {
     var x,y;
     for (x = 0; x < this.width; x++) {
       for (y = 0; y < this.height; y++) {
-        if (this.get(x, y) == DMap.TEMP2) {
-          this.set(x, y, DMap.WALL);
+        if (this.get(x, y) == Tile.TEMP2) {
+          this.set(x, y, Tile.WALL);
         }
       }
     }
   }
 
   // Used for maze generation purposes to find out where to start generating the maze.
-  DMap.prototype.getFirstBlank = function() {
+  getFirstBlank(): CoordPair {
+    var x, y;
     for (x = 1; x < this.width - 1; x += 2) {
       for (y = 1; y < this.height - 1; y += 2) {
-        if (this.get(x, y) == DMap.WALL) {
+        if (this.get(x, y) == Tile.WALL) {
           return {x: x, y: y};
         }
       }
     }
 
-    return false;
+    return null;
   };
 
   // Used whenever we need to place an object on a floor tile.
@@ -288,11 +439,7 @@ define(["./rng"], function(rng) {
   // The parameter "exclude" should be an array of points {x: x, y: y} which
   // should NOT be chosen, even if they are floor tiles. If omitted, an empty
   // array is used.
-  DMap.prototype.getRandomFloorTile = function(exclude) {
-    if (!exclude) {
-      exclude = [];
-    }
-
+  getRandomFloorTile(exclude: Array<CoordPair>): CoordPair {
     var x, y, count = 0;
     do {
       x = this.rng.nextInt(1, this.width);
@@ -316,7 +463,7 @@ define(["./rng"], function(rng) {
   };
 
   // Generates a maze around the rooms.
-  DMap.prototype.generateMaze = function() {
+  generateMaze() {
     while (true) {
       var firstBlank = this.getFirstBlank();
       if (!firstBlank) return;
@@ -331,15 +478,15 @@ define(["./rng"], function(rng) {
       while (stack.length > 0) {
         pos = stack.pop();
         visited.push(pos);
-        this.set(pos.x, pos.y, DMap.TEMP);
+        this.set(pos.x, pos.y, Tile.TEMP);
 
         // Find out where we can go next.
         var nextDirs = [];
         var i;
-        for (i = 0; i < DMap.dirs.length; i++) {
-          var dir = DMap.dirs[i];
-          delta = DMap.deltas[dir];
-          if (this.get(pos.x + 2 * delta.x, pos.y + 2 * delta.y) == DMap.WALL) {
+        for (i = 0; i < dirs.length; i++) {
+          var dir = dirs[i];
+          delta = deltas[dir];
+          if (this.get(pos.x + 2 * delta.x, pos.y + 2 * delta.y) == Tile.WALL) {
             nextDirs.push(dir);
           }
         }
@@ -364,11 +511,11 @@ define(["./rng"], function(rng) {
           }
 
           // Carve out in the direction "next".
-          delta = DMap.deltas[next];
+          delta = deltas[next];
           pos = {x: pos.x + delta.x, y: pos.y + delta.y};
-          this.set(pos.x, pos.y, DMap.TEMP);
+          this.set(pos.x, pos.y, Tile.TEMP);
           pos = {x: pos.x + delta.x, y: pos.y + delta.y};
-          this.set(pos.x, pos.y, DMap.TEMP);
+          this.set(pos.x, pos.y, Tile.TEMP);
 
           // Add our new position to the processing stack.
           stack.push(pos);
@@ -381,12 +528,12 @@ define(["./rng"], function(rng) {
 
   // This function replaces some walls with doors (or whatever) to connect
   // the mazes to the rooms.
-  DMap.prototype.connectComponents = function() {
+  connectComponents() {
     var numTemp = 0;
     var x, y;
     for (x = 1; x < this.width - 1; x++) {
       for (y = 1; y < this.height - 1; y++) {
-        if (this.get(x, y) == DMap.TEMP) {
+        if (this.get(x, y) == Tile.TEMP) {
           numTemp++;
         }
       }
@@ -394,31 +541,31 @@ define(["./rng"], function(rng) {
 
     x = 0;
     y = 0;
-    while (this.get(x, y) != DMap.TEMP) {
+    while (this.get(x, y) != Tile.TEMP) {
       x = this.rng.nextInt(1, this.width);
       y = this.rng.nextInt(1, this.height);
     }
 
 
-    numTemp -= this.floodFill(x, y, DMap.FLOOR);
+    numTemp -= this.floodFill(x, y, Tile.FLOOR);
 
     var connectors;
 
     while (true) {
-      connectors = this.getConnectors(DMap.TEMP, DMap.FLOOR);
+      connectors = this.getConnectors(Tile.TEMP, Tile.FLOOR);
       if (connectors.length == 0) break;
 
-      var randomConnector = this.rng.sample(connectors);
+      var randomConnector: CoordPair = this.rng.sample(connectors);
 
       var cx = randomConnector.x, cy = randomConnector.y;
 
-      if (this.get(cx, cy) == DMap.WALL) {
-        this.set(cx, cy, DMap.TEMP);
-        var numFilled = this.floodFill(cx, cy, DMap.FLOOR) - 1;
+      if (this.get(cx, cy) == Tile.WALL) {
+        this.set(cx, cy, Tile.TEMP);
+        var numFilled = this.floodFill(cx, cy, Tile.FLOOR) - 1;
 
         if (numFilled === 0) {
           // Nothing was filled
-          this.set(cx, cy, DMap.WALL);
+          this.set(cx, cy, Tile.WALL);
         } else {
           numTemp -= numFilled;
 
@@ -436,16 +583,18 @@ define(["./rng"], function(rng) {
     var x, y;
     for (x = 0; x < this.width; x++) {
       for (y = 0; y < this.height; y++) {
-        if (this.get(x, y) == DMap.TEMP) { this.set(x, y, DMap.WALL); }
+        if (this.get(x, y) == Tile.TEMP) { this.set(x, y, Tile.WALL); }
       }
     }
   };
 
-  DMap.prototype.getConnectors = function(tileFrom, tileTo) {
+  getConnectors(tileFrom: Tile, tileTo: Tile): Array<CoordPair> {
     var connectors = [];
+    var x, y;
+
     for (x = 1; x < this.width - 1; x++) {
       for (y = 1; y < this.height - 1; y++) {
-        if (this.get(x, y) == DMap.WALL && (this.checkIfConnector(x, y, tileFrom, tileTo))) {
+        if (this.get(x, y) == Tile.WALL && (this.checkIfConnector(x, y, tileFrom, tileTo))) {
           connectors.push({x: x, y: y});
         }
       }
@@ -454,11 +603,13 @@ define(["./rng"], function(rng) {
     return connectors;
   };
 
-  DMap.prototype.floodFill = function(x, y, newTile) {
-    return genericFloodFill(this.grid, this.width, this.height, x, y, newTile);
-  };
+  floodFill(x: number, y: number, newTile: number): number {
+    return this.genericFloodFill(this.grid, this.width, this.height, x, y, newTile);
+  }
 
-  var genericFloodFill = function(grid, width, height, x, y, newValue) {
+  genericFloodFill<T>(grid: Grid<T>, width: number, height: number, x: number,
+                      y: number, newValue: T): number {
+
     var tilesChanged = 0;
 
     var oldValue = get(grid, width, height, x, y);
@@ -487,7 +638,7 @@ define(["./rng"], function(rng) {
 
   // Checks if the tile at x, y has neighbors of both types tileFrom and tileTo
   // The neighbors must also be in opposite directions.
-  DMap.prototype.checkIfConnector = function(x, y, tileFrom, tileTo) {
+  checkIfConnector(x: number, y: number, tileFrom: Tile, tileTo: Tile): boolean {
     var north = this.get(x, y + 1), south = this.get(x, y - 1);
     if ((north == tileFrom && south == tileTo) ||
         (north == tileTo && south == tileFrom)) return true;
@@ -500,13 +651,13 @@ define(["./rng"], function(rng) {
   };
 
   // Removes dead ends in the maze.
-  DMap.prototype.killDeadEnds = function() {
+  killDeadEnds(): boolean {
     var result = false;
     var x, y;
     for (x = 1; x < this.width - 1; x++) {
       for (y = 1; y < this.height - 1; y++) {
-        if (DMap.isFloorTile(this.get(x, y)) && this.countTilesAround(x, y, DMap.WALL) == 3) {
-          this.set(x, y, DMap.WALL);
+        if (DMap.isFloorTile(this.get(x, y)) && this.countTilesAround(x, y, Tile.WALL) == 3) {
+          this.set(x, y, Tile.WALL);
           result = true;
         }
       }
@@ -516,28 +667,28 @@ define(["./rng"], function(rng) {
 
   };
 
-  DMap.prototype.killIslands = function(maxSize) {
+  killIslands(maxSize: number) {
     var x, y, islandSize;
     for (x = 1; x < this.width - 1; x++) {
       for (y = 1; y < this.height - 1; y++) {
-        if (this.get(x, y) == DMap.WALL) {
-          var islandSize = this.floodFill(x, y, DMap.TEMP);
+        if (this.get(x, y) == Tile.WALL) {
+          islandSize = this.floodFill(x, y, Tile.TEMP);
           if (islandSize < maxSize) {
-            this.floodFill(x, y, DMap.FLOOR);
+            this.floodFill(x, y, Tile.FLOOR);
           }
         }
       }
     }
     for (x = 1; x < this.width - 1; x++) {
       for (y = 1; y < this.height - 1; y++) {
-        if (this.get(x, y) == DMap.TEMP) {
-          this.set(x, y, DMap.WALL);
+        if (this.get(x, y) == Tile.TEMP) {
+          this.set(x, y, Tile.WALL);
         }
       }
     }
-  };
+  }
 
-  DMap.prototype.countTilesAround = function(x, y, tile) {
+  countTilesAround(x: number, y: number, tile: Tile) {
     var count = 0;
 
     if (this.get(x + 1, y) == tile) count++;
@@ -546,11 +697,11 @@ define(["./rng"], function(rng) {
     if (this.get(x, y - 1) == tile) count++;
 
     return count;
-  };
+  }
 
 
-  DMap.prototype.addExtraConnectors = function() {
-    var connectors = this.getConnectors(DMap.FLOOR, DMap.FLOOR);
+  addExtraConnectors() {
+    var connectors = this.getConnectors(Tile.FLOOR, Tile.FLOOR);
     var numExtraConnectors = this.numExtraConnectors;
     while (numExtraConnectors > 0) {
       if (connectors.length === 0) break;
@@ -560,7 +711,7 @@ define(["./rng"], function(rng) {
       for (x = connector.x - thickness; x <= connector.x + thickness; x++) {
         for (y = connector.y - thickness; y <= connector.y + thickness; y++) {
           if (x > 0 && x < this.width - 1 && y > 0 && y < this.height - 1) {
-            this.set(x, y, DMap.FLOOR);
+            this.set(x, y, Tile.FLOOR);
           }
         }
       }
@@ -569,102 +720,14 @@ define(["./rng"], function(rng) {
   };
 
 
-  /*
-   * Class for representing rooms in the dungeon
-   */
-  DMap.Room = function(x, y, w, h) {
-    this.x = x;
-    this.y = y;
-    this.w = w;
-    this.h = h;
-  };
-
-  DMap.Room.prototype.overlap = function(other) {
-    if (this.x + this.w <= other.x || other.x + other.w <= this.x) {
-      return false;
-    }
-
-    if (this.y >= other.y + other.h || other.y >= this.y + this.h) {
-      return false;
-    }
-
-    return true;
-  };
-
-  // Checks if the room can be drawn on the map. If checkOverlap is true
-  // (default value if not provided), then it will be checked to see if it
-  // doesn't overlap other rooms.
-  DMap.Room.prototype.checkOnMap = function(map, checkOverlap) {
-    if (checkOverlap == null) {
-      checkOverlap = true;
-    }
-    var i;
-
-    if (this.x + this.w >= map.width || this.y + this.h >= map.height) {
-      return false;
-    }
-
-    if (checkOverlap) {
-      for (i = 0; i < map.rooms.length; i++) {
-        var other = map.rooms[i];
-        if (this.overlap(other)) return false;
-      }
-    }
-
-    return true;
-  };
-
-  // draws a room at its position
-  DMap.Room.prototype.drawOn = function(map) {
-    var px = this.x, py = this.y,
-        w = this.w, h = this.h;
-    var x, y;
-    for (x = px; x <= px + w; x++) {
-      for (y = py; y <= py + h; y++) {
-        if (x == px || y == py || x == px + w || y == py + h) {
-          map.set(x, y, DMap.WALL);
-        } else {
-          map.set(x, y, DMap.TEMP);
-        }
-      }
-    }
-
-    map.rooms.push(this);
-
-  };
-
-  DMap.Room.genRandomRoom = function(map) {
-    var x, y, w, h; // all of these must be odd;
-
-    x = map.rng.nextInt(0, (map.width-1) / 2) * 2;
-    y = map.rng.nextInt(0, (map.height-1) / 2) * 2;
-    w = map.rng.nextInt((map.minRoomSize-1) / 2, (map.maxRoomSize+1) / 2) * 2;
-    h = map.rng.nextInt((map.minRoomSize-1) / 2, (map.maxRoomSize+1) / 2) * 2;
-
-    return new DMap.Room(x, y, w, h);
-  };
-
-  // This function runs a 2d cellular automata step on grid (1-d array)
-  // options = {
-  //   width: int (required, width of the grid)
-  //   height: int (required, height of the grid)
-  //   rule: { (required, standard 2d cellular automata rule)
-  //     birth: [2,3] (example, how many alive neighbors a dead cell needs to be born)
-  //     survive: [3] (example, how many alive neighbors an alive cell needs to survive)
-  //   }
-  //   alive: which value signifies alive, default DMap.WALL
-  //   dead: which value signifies dead, default DMap.FLOOR
-  // }
-  var runCellularAutomataStep = function(grid, options) {
+  runCellularAutomataStep<T>(grid: Grid<T>, options: CellularAutomataOptions<T>) {
     var width = options.width;
     var height = options.height;
-    if (!width || !height) throw "cellular automata needs grid with width and height";
 
     var rule = options.rule;
-    if (!rule) throw "no rule provided";
 
-    var alive = options.alive == null ? DMap.WALL : options.alive;
-    var dead = options.dead == null ? DMap.FLOOR : options.dead;
+    var alive = options.alive == null ? Tile.WALL : options.alive;
+    var dead = options.dead == null ? Tile.FLOOR : options.dead;
 
     var gridCopy = grid.slice(0);
 
@@ -700,6 +763,4 @@ define(["./rng"], function(rng) {
     }
   };
 
-  return DMap;
-
-});
+}

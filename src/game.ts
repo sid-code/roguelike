@@ -1,7 +1,98 @@
 
-define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(DMap, Dungeon, rng, Actor, Item, Util) {
-  var Game = function(canvas, options) {
-    /// Constructor {{{
+import { DMap, Tile, TileStatus } from "./map";
+import { Dungeon, DungeonLevel } from "./dungeon";
+import { PSprng as rng } from "./rng";
+import { Actor, Player, Monster } from "./actor";
+import { GenericItem, Staircase } from "./item";
+import { ObjectList, Timer, TimerCallback, OutputFunc } from "./interfaces";
+import * as Util from "./util";
+
+interface SeeFunc {
+  (map: DMap, x: number, y: number);
+}
+
+interface KeyFunc {
+  (game: Game);
+}
+
+// Just a list of keybinds
+interface KeyEnv {
+  [code: number]: KeyFunc;
+}
+
+export interface DungeonOptions {
+  width: number;
+  height: number;
+
+  // Room size control
+  minRoomSize?: number;
+  maxRoomSize?: number;
+
+  // Allow the rooms to overlap? (Allows dungeon to have tons of rooms)
+  // Turn off for a more maze-like dungeon.
+  allowRoomOverlap?: boolean;
+
+  // Higher = more rooms (can't guarantee how many though)
+  numRoomAttempts?: number;
+
+  // Higher = more connected dungeon
+  numExtraConnectors?: number;
+
+  // Vague constraints on cave dimensions. This does not guarantee caves of
+  // size 24x24 but generally the bigger these get, the fatter or taller
+  // caves get.
+  caveWidth?: number;
+  caveHeight?: number;
+
+  // How many caves should be placed on the map?
+  numCaves?: number;
+
+  caveSetting?: Array<number>;
+
+  // How fat should the connectors be? 1 = single square, 2 = 3x3, 3 = 5x5,
+  // etc. (A connector is a block of floor tiles randomly placed to connect
+  // components of the dungeon together)
+  connectorThickness?: number;
+
+  // 0-1, how straight should corridors be?
+  straightTendency?: number;
+}
+
+interface HomeLevelOptions {
+  width: number;
+  height: number;
+}
+
+interface GameOptions {
+  // RNG seed
+  seed: number;
+
+  player: Player;
+  output: OutputFunc;
+  homeLevel: HomeLevelOptions;
+  dungeon: DungeonOptions;
+
+  tileSize: number;
+}
+
+export class Game {
+  canvas: HTMLCanvasElement;
+  rng: rng;
+  dungeon: Dungeon;
+  player: Player;
+  output: OutputFunc;
+
+  config: GameOptions;
+
+  ticks: number;
+
+  timers: Array<Timer>;
+  envStack: Array<KeyEnv>;
+
+  currentSeen: any; // todo: formalize
+
+  /// Constructor {{{
+  constructor(canvas: HTMLCanvasElement, options: GameOptions) {
     this.canvas = canvas;
 
     this.rng = new rng(options.seed);
@@ -15,14 +106,7 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
     var homeLevel = options.homeLevel || {};
     var dungeon = options.dungeon || {};
 
-    this.config = {
-      homeLevel: {
-        width: homeLevel.width || 65,
-        height: homeLevel.height || 33,
-      },
-      tileSize: options.tileSize || 15,
-      dungeon: dungeon,
-    }
+    this.config = options;
 
     this.ticks = 0;
 
@@ -52,23 +136,23 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
     // it's seen, and if not then it's not.)
     this.currentSeen = {};
 
-    /// }}}
-  };
+  }
+  /// }}}
 
   /// Initialization {{{
 
   // This will initialize the dungeon.
-  Game.prototype.initializeDungeon = function() {
+  initializeDungeon() {
     this.initializeHomeLevel();
     var i;
 
-    this.placeStaircases(0, 1);
+    this.placeStaircase(0);
 
     this.placePlayer(0);
-  };
+  }
 
 
-  Game.prototype.initializeHomeLevel = function() {
+  initializeHomeLevel() {
     var width = this.config.homeLevel.width;
     var height = this.config.homeLevel.height;
 
@@ -84,17 +168,19 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
     var x, y;
     for (x = 0; x < width; x++) {
       for (y = 0; y < width; y++) {
-        homeLevel.setSeen(x, y, DMap.SEEN);
+        homeLevel.setSeen(x, y, TileStatus.SEEN);
       }
     }
 
     this.dungeon.addLevel(0, homeLevel);
-  };
+  }
 
-  Game.prototype.isLevelInitialized = function(index) {
+
+  isLevelInitialized(index: number) {
     return !!this.dungeon.getLevel(index);
-  };
-  Game.prototype.initializeDungeonLevel = function(index) {
+  }
+
+  initializeDungeonLevel(index: number) {
     // This creates an object with prototype of this.config.dungeon that will
     // be passed into the map. This DOES NOT clone the dungeon configuration
     // object.
@@ -114,7 +200,7 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
     if (above) {
       for (i = 0; i < above.items.length; i++) {
         item = above.items[i];
-        if (item.constructor == Item.Staircase) {
+        if (item instanceof Staircase) {
           upStaircasePos = {x: item.pos.x, y: item.pos.y};
         }
       }
@@ -122,7 +208,7 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
     if (below) {
       for (i = 0; i < below.items.length; i++) {
         item = below.items[i];
-        if (item.constructor == Item.Staircase) {
+        if (item instanceof Staircase) {
           downStaircasePos = {x: item.pos.x, y: item.pos.y};
         }
       }
@@ -146,7 +232,7 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
     this.dungeon.addLevel(index, map);
 
     if (!upStaircasePos) {
-      randomPos = map.getRandomFloorTile();
+      randomPos = map.getRandomFloorTile(exclude);
       exclude.push(randomPos);
       if (randomPos.x == -1) {
         throw "could not place up staircase because there were no floor tiles on level " + index;
@@ -165,49 +251,50 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
       downStaircasePos = randomPos;
     }
 
-    var upsc = new Item.Staircase({up: true});
+    var upsc = new Staircase({up: true});
     this.dungeon.placeItem(index, upStaircasePos.x, upStaircasePos.y, upsc);
-    var downsc = new Item.Staircase({up: false});
+    var downsc = new Staircase({up: false});
     this.dungeon.placeItem(index, downStaircasePos.x, downStaircasePos.y, downsc);
 
 
     // Now place some monsters
     randomPos = map.getRandomFloorTile(exclude);
     console.log(randomPos);
-    var monster = Actor.Monster.create("rat");
+    var monster = Monster.create("rat");
     this.dungeon.placeMonster(index, randomPos.x, randomPos.y, monster);
 
 
-  };
+  }
 
-  Game.prototype.placePlayer = function(index) {
+
+  placePlayer(index: number) {
     var map = this.dungeon.getLevel(index).map;
 
     this.player.pos.level = index;
 
-    var randomPos = map.getRandomFloorTile();
+    var randomPos = map.getRandomFloorTile([]);
     if (randomPos.x == -1) {
       throw "could not place player because there were no floor tiles on level " + index;
     }
 
     this.player.pos.x = randomPos.x;
     this.player.pos.y = randomPos.y;
-  };
+  }
 
   // Places a down staircase on level
-  Game.prototype.placeStaircases = function(index) {
+  placeStaircase(index: number) {
     var map = this.dungeon.getLevel(index).map;
 
-    var randomPos = map.getRandomFloorTile();
+    var randomPos = map.getRandomFloorTile([]);
     if (randomPos.x == -1) {
       throw "could not place staircase because there were no floor tiles on level " + index;
     }
 
 
     // fromLevel gets a down staircase and toLevel gets an up staircase
-    var sc = new Item.Staircase({up: false});
+    var sc = new Staircase({up: false});
     this.dungeon.placeItem(index, randomPos.x, randomPos.y, sc);
-  };
+  }
 
   /// }}}
 
@@ -217,12 +304,12 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
   // Sets x, y as seen on the map and also adds it to the currently seen "hash
   // set". This is cleared every time the player looks again but the map seen
   // is not.
-  Game.prototype.see = function(map, x, y) {
-    map.setSeen(x, y, DMap.SEEN);
+  see(map: DMap, x: number, y: number) {
+    map.setSeen(x, y, TileStatus.SEEN);
     this.currentSeen[Util.pair(x, y)] = 1;
   };
 
-  Game.prototype.canCurrentlySee = function(x, y) {
+  canCurrentlySee(x: number, y: number): boolean {
     var key = Util.pair(x, y);
     return key in this.currentSeen;
   }
@@ -234,17 +321,11 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
   // Returns true if (x1, y1) successfully reached, false if not.
   // For each point seen, calls `fn`. If not provided, default of `this.see` is used.
   // If `fn` is null, a dummy empty function is used.
-  Game.prototype.castLine = function(map, x0, y0, x1, y1, fn, maxLen) {
+  castLine(map: DMap, x0: number, y0: number, x1: number, y1: number, 
+           fn: SeeFunc, maxLen = Infinity) {
+
     var sx, sy, xnext, ynext, dx, dy, sqsum;
     var denom, dist;
-
-    if (typeof fn === "undefined") {
-      fn = this.see.bind(this);
-    }
-
-    if (fn === null) {
-      fn = function() {};
-    }
 
     if (typeof maxLen === "undefined") {
       maxLen = Infinity;
@@ -265,9 +346,11 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
 
     denom = Math.sqrt(sqsum);
     while (xnext != x1 || ynext != y1) {
-      fn(map, xnext, ynext);
+      if (fn) {
+        fn(map, xnext, ynext);
+      }
 
-      if (map.get(xnext, ynext) == DMap.WALL) {
+      if (map.get(xnext, ynext) == Tile.WALL) {
         // It's a wall, so we're done.
         return false;
       }
@@ -286,7 +369,7 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
   };
 
   // This function updates what the player can see.
-  Game.prototype.playerLook = function() {
+  playerLook() {
     var playerPos = this.player.pos;
 
     // This stores what the player can currently see so it can be rendered as
@@ -300,46 +383,59 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
 
     this.see(map, playerPos.x, playerPos.y);
 
+    var seeFunc = this.see.bind(this);
+
     // https://en.wikipedia.org/wiki/Midpoint_circle_algorithm
     var x, y, err;
     var radius;
+    //for (radius = 2; radius <= this.player.stats.lightRadius; radius++) {
+    //  x = radius;
+    //  y = 0;
+    //  err = 0;
+    //  while (x >= y) {
+    //    console.log(x, y);
+    //    this.castLine(map, px, py, px + x, py + y, seeFunc);
+    //    this.castLine(map, px, py, px + y, py + x, seeFunc);
+    //    this.castLine(map, px, py, px - y, py + x, seeFunc);
+    //    this.castLine(map, px, py, px - x, py + y, seeFunc);
+    //    this.castLine(map, px, py, px - x, py - y, seeFunc);
+    //    this.castLine(map, px, py, px - y, py - x, seeFunc);
+    //    this.castLine(map, px, py, px + y, py - x, seeFunc);
+    //    this.castLine(map, px, py, px + x, py - y, seeFunc);
+
+    //    y += 1;
+    //    err += 1 + 2 * y;
+    //    if (2 * (err - x) + 1 > 0) {
+    //      x -= 1;
+    //      err += 1 - 2 * x;
+    //    }
+
+    //  }
+    //}
+
     for (radius = 2; radius <= this.player.stats.lightRadius; radius++) {
-      x = radius;
-      y = 0;
-      err = 0;
-      while (x >= y) {
-        this.castLine(map, px, py, px + x, py + y);
-        this.castLine(map, px, py, px + y, py + x);
-        this.castLine(map, px, py, px - y, py + x);
-        this.castLine(map, px, py, px - x, py + y);
-        this.castLine(map, px, py, px - x, py - y);
-        this.castLine(map, px, py, px - y, py - x);
-        this.castLine(map, px, py, px + y, py - x);
-        this.castLine(map, px, py, px + x, py - y);
-
-        y += 1;
-        err += 1 + 2 * y;
-        if (2 * (err - x) + 1 > 0) {
-          x -= 1;
-          err += 1 - 2 * x;
-        }
-
+      var angle = 0;
+      while (angle <= Math.PI * 2) {
+        let sin = Math.sin(angle) * radius >> 0;
+        let cos = Math.cos(angle) * radius >> 0;
+        this.castLine(map, px, py, px + cos, py + sin, seeFunc);
+        angle += 0.01;
       }
     }
 
-  };
+  }
 
-  Game.prototype.actorCanSee = function(actor, otherActor) {
+  actorCanSee(actor: Actor, otherActor: Actor): boolean {
     if (actor.pos.level != otherActor.pos.level) return false;
 
     var map = this.dungeon.getLevel(this.player.pos.level).map;
     var result = this.castLine(map, actor.pos.x, actor.pos.y, otherActor.pos.x, otherActor.pos.y, null, actor.stats.lightRadius);
 
     return result;
-  };
+  }
 
   // This function gets all the monsters/items at x, y of a level
-  Game.prototype.getObjectsAt = function(level, x, y) {
+  getObjectsAt(level: DungeonLevel, x: number, y: number): ObjectList {
     // Note: under normal circumstances, this function should only ever return
     // one monster because there can never be more than one monster on a tile.
     // There, however, can be multiple items on the same tile.
@@ -361,17 +457,17 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
     }
 
     return result;
-  };
+  }
 
-  Game.prototype.getObjectsAtPlayer = function() {
+  getObjectsAtPlayer(): ObjectList {
     var pos = this.player.pos;
     var level = this.dungeon.getLevel(pos.level);
     return this.getObjectsAt(level, pos.x, pos.y);
-  };
+  }
   /// }}}
 
   /// Game "tick" {{{
-  Game.prototype.tick = function() {
+  tick() {
     this.ticks++;
 
     // Tick monsters
@@ -399,13 +495,14 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
       }
     }
 
-  };
+  }
 
-  Game.prototype.setTimer = function(ticks, callback) {
-    var timer = {ticksLeft: ticks, callback: callback};
+
+  setTimer(ticks: number, callback: TimerCallback) {
+    let timer: Timer = {ticksLeft: ticks, callback: callback};
     this.timers.push(timer);
     return timer;
-  };
+  }
   /// }}}
 
   /// Actor movement {{{
@@ -414,7 +511,7 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
   // move-until-wall shortcuts. It will return true if the player should keep
   // moving and false if the player should stop; if there's a wall or a new
   // monster comes into view.
-  Game.prototype.tryActorMove = function(actor, dx, dy) {
+  tryActorMove(actor: Actor, dx: number, dy: number): boolean {
     var pos = actor.pos;
     var level = this.dungeon.getLevel(pos.level);
     if (!level) {
@@ -443,7 +540,7 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
 
       return false;
 
-    } else if (ppos.x == newX && ppos.y == newY && ppos.level == level) {
+    } else if (ppos.x == newX && ppos.y == newY && ppos.level == pos.level) {
       // TODO: attack the player 
     } else {
       actor.move(dx, dy);
@@ -469,11 +566,11 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
     }
 
 
-  };
+  }
 
   // This function tries to use a staircase. If "up" is true, then it'll try to
   // climb up. If "up" is false then it'll try to climb down.
-  Game.prototype.tryStaircase = function(up) {
+  tryStaircase(up: boolean) {
     var objects = this.getObjectsAtPlayer();
 
     // These two variables hold whether the current tile has an up or down
@@ -483,7 +580,7 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
     var i, item;
     for (i = 0; i < objects.items.length; i++) {
       item = objects.items[i];
-      if (item.constructor == Item.Staircase) {
+      if (item.constructor == Staircase) {
         upsc = item.up;
         downsc = !item.up;
         break;
@@ -503,21 +600,21 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
         this.echo("There is no down staircase here.");
       }
     }
-  };
+  }
 
-  Game.prototype.shiftPlayerLevel = function(numLevels) {
+  shiftPlayerLevel(numLevels: number) {
     this.player.pos.level += numLevels;
     if (!this.isLevelInitialized(this.player.pos.level)) {
       this.initializeDungeonLevel(this.player.pos.level);
     }
-  };
+  }
 
   /// }}}
 
   /// Player I/O {{{
 
   /// Rendering {{{
-  Game.prototype.draw = function() {
+  draw() {
     var height = this.canvas.height;
     var width = this.canvas.width;
     var ctx = this.canvas.getContext("2d");
@@ -541,16 +638,16 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
       for (y = 0, tileY = playerPos.y - (verticalTiles / 2 >> 0); y < verticalTiles; y++, tileY++) {
         // Note: The following is temporary code that I'm using for now.
         var tile = map.get(tileX, tileY);
-        var seen = map.getSeen(tileX, tileY) != DMap.UNSEEN;
+        var seen = map.getSeen(tileX, tileY) != TileStatus.UNSEEN;
         var currentlySeen = this.canCurrentlySee(tileX, tileY);
 
         if (seen) {
           switch (tile) {
-            case DMap.NOTHING:
+            case Tile.NOTHING:
               ctx.fillStyle = "black"; break;
-            case DMap.WALL:
+            case Tile.WALL:
               ctx.fillStyle = "brown"; break;
-            case DMap.FLOOR:
+            case Tile.FLOOR:
               ctx.fillStyle = "lightgrey"; break;
           }
 
@@ -590,12 +687,12 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
       }
     }
 
-  };
+  }
 
   /// }}}
 
   /// Output {{{
-  Game.prototype.echo = function(msg, color) {
+  echo(msg: string, color: string = "") {
     this.output(msg, color);
   };
   /// }}}
@@ -606,82 +703,51 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
   // Combine the shift and keycode into a single keycode to use
   // key: 0-255
   // shift: true or false
-  Game.prepareKey = function(key, shift) {
+  static prepareKey(key: number, shift: boolean): number {
     var shiftPart = shift ? 1 : 0;
-    return (shift << 8) | key;
+    return (shiftPart << 8) | key;
   };
 
   // For convenience
-  var shift = function(key) {return Game.prepareKey(key, true);};
+  static shift(key: number): number {
+    return Game.prepareKey(key, true);
+  }
 
   // The actual codes
-  Game.keys = {
+  static keys = {
     WAIT: 190, // dot
     LEFT: 37,
     UP: 38,
     RIGHT: 39,
     DOWN: 40,
 
-    LESSTHAN: shift(188),
-    GREATERTHAN: shift(190),
+    LESSTHAN: Game.shift(188),
+    GREATERTHAN: Game.shift(190),
   };
   ///}}}
 
   /// Keybind set accessing and switching {{{
 
   // newEnv should be an object like Game.primaryKeybinds
-  Game.prototype.pushEnv = function(newEnv) {
+  pushEnv(newEnv: KeyEnv) {
     this.envStack.unshift(newEnv);
   };
 
-  Game.prototype.popEnv = function(newEnv) {
+  popEnv(): KeyEnv {
     return this.envStack.shift();
   };
 
-  Game.prototype.getCurrentEnv = function() {
+  getCurrentEnv(): KeyEnv {
     return this.envStack[0];
   };
 
-  Game.prototype.getActionForKey = function(key) {
+  getActionForKey(key: number): KeyFunc {
     return this.getCurrentEnv()[key];
   };
 
   /// }}}
 
-  /// Global keybinds {{{
-  Game.primaryKeybinds = {};
-  Game.primaryKeybinds[Game.keys.WAIT] = function(game) {
-    // do nothing
-    game.tick();
-  };
-
-  Game.primaryKeybinds[Game.keys.RIGHT] = function(game) {
-    game.tryActorMove(game.player, 1, 0);
-    game.tick();
-  };
-  Game.primaryKeybinds[Game.keys.LEFT] = function(game) {
-    game.tryActorMove(game.player, -1, 0);
-    game.tick();
-  };
-  Game.primaryKeybinds[Game.keys.UP] = function(game) {
-    game.tryActorMove(game.player, 0, -1);
-    game.tick();
-  };
-  Game.primaryKeybinds[Game.keys.DOWN] = function(game) {
-    game.tryActorMove(game.player, 0, 1);
-    game.tick();
-  };
-
-  Game.primaryKeybinds[Game.keys.LESSTHAN] = function(game) {
-    game.tryStaircase(false);
-  };
-  Game.primaryKeybinds[Game.keys.GREATERTHAN] = function(game) {
-    game.tryStaircase(true);
-  };
-
-  /// }}}
-
-  Game.prototype.handleKey = function(key) {
+  handleKey(key: number) {
     // Note: key is not a typical key code; if shift was pressed, it has 256 added to it.
 
     // Handle the specific key
@@ -696,13 +762,48 @@ define(["./map", "./dungeon", "./rng", "./actor", "./item", "./util"], function(
 
     this.playerLook();
 
-  };
+  }
   /// }}}
 
   /// }}}
 
+  /// Global keybinds {{{
+  static primaryKeybinds: KeyEnv = {
+    [Game.keys.WAIT](game) {
+      game.tick();
+    },
 
-  return Game;
-});
+    [Game.keys.RIGHT](game) {
+      game.tryActorMove(game.player, 1, 0);
+      game.tick();
+    },
+    [Game.keys.LEFT](game) {
+      game.tryActorMove(game.player, -1, 0);
+      game.tick();
+    },
+    [Game.keys.UP](game) {
+      game.tryActorMove(game.player, 0, -1);
+      game.tick();
+    },
+    [Game.keys.DOWN](game) {
+      game.tryActorMove(game.player, 0, 1);
+      game.tick();
+    },
+
+    [Game.keys.LESSTHAN](game) {
+      game.tryStaircase(false);
+    },
+    [Game.keys.GREATERTHAN](game) {
+      game.tryStaircase(true);
+    },
+  }
+  
+
+
+
+  /// }}}
+
+}
+
 
 // vim:fdm=marker
