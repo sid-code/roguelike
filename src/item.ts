@@ -14,7 +14,7 @@
  * item's announce() function.
  */
 
-import { Position } from "./interfaces";
+import { GenericObject } from "./object";
 import { Actor } from "./actor";
 import { Game } from "./game";
 
@@ -31,17 +31,13 @@ interface StaircaseOptions extends GenericItemOptions {
 }
 
 
-export class GenericItem {
+export class GenericItem extends GenericObject {
   name: string;
-  pos: Position;
 
   constructor(options: GenericItemOptions) {
+    super();
     this.name = options.name;
-    this.pos = {
-      level: 0,
-      x: 0,
-      y: 0
-    };
+    this.setPos({ level: 0, x: 0, y: 0 });
   }
 
   // Override this in subclasses. This is useful to hide the name of

@@ -3,6 +3,7 @@
  */
 
 import { SimpleOutfit } from "./interfaces";
+import { GenericObject } from "./object";
 import { Game } from "./game";
 import * as Util from "./util";
 
@@ -31,11 +32,11 @@ interface ActorOptions {
   tick?: TickActionFunc;
 }
 
-export class Actor {
+export abstract class Actor extends GenericObject {
   name: string;
   level: number;
   hp: number;
-  pos: Position;
+
   stats: ActorStats
 
   affects: Array<string>;
@@ -46,6 +47,8 @@ export class Actor {
   equipped: SimpleOutfit;
 
   constructor(options: ActorOptions) {
+    super();
+
     this.name = options.name;
 
     let stats = options.stats;
@@ -74,7 +77,7 @@ export class Actor {
     this.tick = (options.tick || function() {}).bind(this);
 
     this.affects = [];;
-    this.pos = {level: 0, x: 0, y: 0};
+    this.setPos({level: 0, x: 0, y: 0});
 
     this.inventory = {};
     this.equipped = {
@@ -84,9 +87,9 @@ export class Actor {
     };
   }
 
-  move(dx: number, dy: number) {
-    this.pos.x += dx;
-    this.pos.y += dy;
+  move(dx, dy) {
+    var pos = this.getPos();
+    this.setPos({level: pos.level, x: pos.x + dx, y: pos.y + dy});
   }
 
 }
@@ -115,9 +118,13 @@ interface MonsterOptions extends ActorOptions {
 
 let simpleTickAction: TickActionFunc = function(game: Game) {
   var player = game.player;
+
+  var playerPos, thisPos;
   if (game.actorCanSee(this, player)) {
-    var dx = Util.sign(player.pos.x - this.pos.x);
-    var dy = Util.sign(player.pos.y - this.pos.y);
+    playerPos = player.getPos();
+    thisPos = this.getPos();
+    var dx = Util.sign(playerPos.x - thisPos.x);
+    var dy = Util.sign(playerPos.y - thisPos.y);
 
     game.tryActorMove(this, dx, dy);
   }

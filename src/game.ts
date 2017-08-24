@@ -200,16 +200,18 @@ export class Game {
     if (above) {
       for (i = 0; i < above.items.length; i++) {
         item = above.items[i];
+        var itemPos = item.getPos();
         if (item instanceof Staircase) {
-          upStaircasePos = {x: item.pos.x, y: item.pos.y};
+          upStaircasePos = {x: itemPos.x, y: itemPos.y};
         }
       }
     }
     if (below) {
       for (i = 0; i < below.items.length; i++) {
         item = below.items[i];
+        var itemPos = item.getPos();
         if (item instanceof Staircase) {
-          downStaircasePos = {x: item.pos.x, y: item.pos.y};
+          downStaircasePos = {x: itemPos.x, y: itemPos.y};
         }
       }
     }
@@ -270,15 +272,13 @@ export class Game {
   placePlayer(index: number) {
     var map = this.dungeon.getLevel(index).map;
 
-    this.player.pos.level = index;
 
     var randomPos = map.getRandomFloorTile([]);
     if (randomPos.x == -1) {
       throw "could not place player because there were no floor tiles on level " + index;
     }
 
-    this.player.pos.x = randomPos.x;
-    this.player.pos.y = randomPos.y;
+    this.player.setPos({ level: index, x: randomPos.x, y: randomPos.y })
   }
 
   // Places a down staircase on level
@@ -370,7 +370,7 @@ export class Game {
 
   // This function updates what the player can see.
   playerLook() {
-    var playerPos = this.player.pos;
+    var playerPos = this.player.getPos();
 
     // This stores what the player can currently see so it can be rendered as
     // such (brighter than the rest), see constructor for more information.
@@ -381,7 +381,7 @@ export class Game {
 
     var map = playerLevel.map;
 
-    this.see(map, playerPos.x, playerPos.y);
+    this.see(map, px, py);
 
     var seeFunc = this.see.bind(this);
 
@@ -426,10 +426,15 @@ export class Game {
   }
 
   actorCanSee(actor: Actor, otherActor: Actor): boolean {
-    if (actor.pos.level != otherActor.pos.level) return false;
+    var pos1 = actor.getPos();
+    var pos2 = otherActor.getPos();
+    if (pos1.level != pos2.level) return false;
 
-    var map = this.dungeon.getLevel(this.player.pos.level).map;
-    var result = this.castLine(map, actor.pos.x, actor.pos.y, otherActor.pos.x, otherActor.pos.y, null, actor.stats.lightRadius);
+    var level = this.dungeon.getLevel(pos1.level);
+    if (!level) return false;
+
+    var map = level.map;
+    var result = this.castLine(map, pos1.x, pos1.y, pos2.x, pos2.y, null, actor.stats.lightRadius);
 
     return result;
   }
@@ -460,7 +465,7 @@ export class Game {
   }
 
   getObjectsAtPlayer(): ObjectList {
-    var pos = this.player.pos;
+    var pos = this.player.getPos();
     var level = this.dungeon.getLevel(pos.level);
     return this.getObjectsAt(level, pos.x, pos.y);
   }
@@ -471,7 +476,7 @@ export class Game {
     this.ticks++;
 
     // Tick monsters
-    var index = this.player.pos.level;
+    var index = this.player.getPos().level;
     var level = this.dungeon.getLevel(index);
     var monsters = level.monsters, monster;
     var i;
@@ -512,7 +517,7 @@ export class Game {
   // moving and false if the player should stop; if there's a wall or a new
   // monster comes into view.
   tryActorMove(actor: Actor, dx: number, dy: number): boolean {
-    var pos = actor.pos;
+    var pos = actor.getPos();
     var level = this.dungeon.getLevel(pos.level);
     if (!level) {
       throw {
@@ -530,7 +535,7 @@ export class Game {
       return false;
     }
 
-    var ppos = this.player.pos;
+    var ppos = this.player.getPos();
 
     // Check if there is a monster on that tile. If so, try to attack it.
     var objects = this.getObjectsAt(level, newX, newY);
@@ -603,9 +608,10 @@ export class Game {
   }
 
   shiftPlayerLevel(numLevels: number) {
-    this.player.pos.level += numLevels;
-    if (!this.isLevelInitialized(this.player.pos.level)) {
-      this.initializeDungeonLevel(this.player.pos.level);
+    var pos = this.player.getPos();
+    pos.level += numLevels;
+    if (!this.isLevelInitialized(pos.level)) {
+      this.initializeDungeonLevel(pos.level);
     }
   }
 
@@ -623,7 +629,7 @@ export class Game {
     var horizontalTiles = Math.floor(width / tileSize);
     var verticalTiles = Math.floor(height / tileSize);
 
-    var playerPos = this.player.pos;
+    var playerPos = this.player.getPos();
     var playerLevel = this.dungeon.getLevel(playerPos.level);
 
     var map = playerLevel.map;
